@@ -389,15 +389,19 @@ void iter() {
     if (stateNow == 0) {
         // constructing characters
         if (newDataFlag == 1) {
-            if (lastMarkType == 0) {
-                // Serial.print(".");
-                currentCharacter[bufferPosition] = 1;
+            // marks beyond the buffer are dropped; the character is then
+            // unmatched because no code uses all 9 slots
+            if (bufferPosition < sizeof(currentCharacter)) {
+                if (lastMarkType == 0) {
+                    // Serial.print(".");
+                    currentCharacter[bufferPosition] = 1;
+                }
+                else {
+                    // Serial.print("-");
+                    currentCharacter[bufferPosition] = 2;
+                }
+                bufferPosition++;
             }
-            else {
-                // Serial.print("-");
-                currentCharacter[bufferPosition] = 2;
-            }
-            bufferPosition++;
             newDataFlag = 0;
 
             if (lastMarkType == 1) {
