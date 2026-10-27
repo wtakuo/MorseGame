@@ -434,6 +434,7 @@ void iter() {
             }
             if (matchFound != 1) {
                 currentCharacterNumber = 38;
+                inputWord += "*";
                 inputText += "*";
             }
             else {
