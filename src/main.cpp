@@ -334,6 +334,8 @@ void doGame() {
             else {
                 challengeWord = "";
             }
+            inputWord = "";
+            wordCompleted = false;
             scoreChanged = true;
             screenNeedsUpdate = true;
         }
