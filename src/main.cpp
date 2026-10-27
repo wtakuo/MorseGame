@@ -391,11 +391,8 @@ void iter() {
                 // Serial.println("Key Released");
             }
             lastKeyState = keyState;
-            // only accepted changes restart the timer; otherwise rejected
-            // glitches keep pushing it forward and a real change is never
-            // accepted
-            lastChangeTime = changeTime;
         }
+        lastChangeTime = changeTime;
     }
 
     if (stateNow == 0) {
