@@ -139,6 +139,11 @@ void setTiming() {
 
 #define TONE_FREQ 600
 
+// Speaker virtual channels: the sidetone and the sound effects are kept
+// apart so that releasing the key does not cut off an effect.
+#define SIDETONE_CH 0
+#define EFFECT_CH 1
+
 int keylampSize = 10;
 
 bool screenNeedsUpdate = true;
@@ -303,7 +308,7 @@ void doGame() {
         }
         else if (wordCompleted && millis() < startTime + timeout) {
             if (challengeWord.equals(inputWord)) {
-                M5.Speaker.tone(1600, 100);
+                M5.Speaker.tone(1600, 100, EFFECT_CH);
                 score += level * 10;
                 successCount++;
                 if (level < 5 && successCount >= 10) {
@@ -316,16 +321,16 @@ void doGame() {
                 screenNeedsUpdate = true;
             }
             else {
-                M5.Speaker.tone(1000, 50);
-                M5.Speaker.tone(800, 50);
+                M5.Speaker.tone(1000, 50, EFFECT_CH);
+                M5.Speaker.tone(800, 50, EFFECT_CH, false);
             }
             inputWord = "";
             wordCompleted = false;
         }
         else if (millis() >= startTime + timeout) {
             lives--;
-            M5.Speaker.tone(800, 500);
-            M5.Speaker.tone(700, 500);
+            M5.Speaker.tone(800, 500, EFFECT_CH);
+            M5.Speaker.tone(700, 500, EFFECT_CH, false);
             if (lives <= 0) {
                 gameState = GS_GAMEOVER;
                 gameoverTimer = millis() + 5000;
@@ -363,7 +368,7 @@ void iter() {
         if (changeTime - lastChangeTime >= minDuration) {
             if (keyState == LOW) {
                 stateNow = 1;
-                M5.Speaker.tone(TONE_FREQ);
+                M5.Speaker.tone(TONE_FREQ, UINT32_MAX, SIDETONE_CH);
                 keyOn = true;
                 screenNeedsUpdate = true;
                 // Serial.println("Key Pressed");
@@ -378,7 +383,7 @@ void iter() {
                 }
                 newDataFlag = 1;
                 stateNow = 0;
-                M5.Speaker.stop();
+                M5.Speaker.stop(SIDETONE_CH);
                 keyOn = false;
                 screenNeedsUpdate = true;
                 // Serial.println("Key Released");
