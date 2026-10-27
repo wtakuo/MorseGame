@@ -277,6 +277,8 @@ void doGame() {
         inputWord = "";
         wordCompleted = false;
         successCount = 0;
+        scoreChanged = true;
+        screenNeedsUpdate = true;
         gameState = GS_PLAYING;
     }
     else if (gameState == GS_PLAYING) {
