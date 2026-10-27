@@ -116,8 +116,10 @@ byte smoothingFactor = 9;
 unsigned long lastIterTime;
 // unsigned long lastDrawTime;
 
-int lastKeyState = HIGH;
+int lastKeyState = HIGH;     // debounced key state
 unsigned long lastChangeTime = 0;
+int rawKeyState = HIGH;      // key state as last read from the pin
+unsigned long rawChangeTime = 0;
 bool stateNow = 0;
 bool newDataFlag = 0;
 bool lastMarkType = 0;
@@ -364,10 +366,17 @@ void doGame() {
 
 void iter() {
     // key state check
+    // a change is accepted once the pin has been stable for minDuration;
+    // its time is when the pin settled, so the delay cancels out in the
+    // mark and gap lengths
     int keyState = digitalRead(KEY_PIN);
+    if (keyState != rawKeyState) {
+        rawKeyState = keyState;
+        rawChangeTime = millis();
+    }
     if (keyState != lastKeyState) {
-        unsigned long changeTime = millis();
-        if (changeTime - lastChangeTime >= minDuration) {
+        unsigned long changeTime = rawChangeTime;
+        if (millis() - changeTime >= minDuration) {
             if (keyState == LOW) {
                 stateNow = 1;
                 M5.Speaker.tone(TONE_FREQ, UINT32_MAX, SIDETONE_CH);
@@ -391,8 +400,8 @@ void iter() {
                 // Serial.println("Key Released");
             }
             lastKeyState = keyState;
+            lastChangeTime = changeTime;
         }
-        lastChangeTime = changeTime;
     }
 
     if (stateNow == 0) {
