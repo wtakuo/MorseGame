@@ -8,3 +8,26 @@ When the game begins, an alphabet letter or an English word will appear on the s
 All you need is a Morse key, which you can connect to a GPIO pin such as a Grove connector.
 
 This game was created by Takuo Watanabe for an exhibition at the Yokohama Midorigaoka High School Homecoming Day held on November 15, 2025.
+
+## Building
+
+The sketch is built with [arduino-cli](https://arduino.github.io/arduino-cli/).
+`sketch.yaml` defines one profile per target board; the ESP32 core and the
+libraries are installed automatically on the first build.
+
+| Profile | Board | Morse key pin |
+|---|---|---|
+| `core2` | M5Stack Core2 | GPIO 33 (Grove Port A) |
+| `core3` | M5Stack CoreS3 / CoreS3-SE (default) | GPIO 8 (Grove Port B) |
+
+```sh
+arduino-cli compile --profile core2                     # build only
+arduino-cli compile --profile core2 -u -p <serial-port> # build and upload
+```
+
+Both profiles share the same build directory, so build and upload in one
+command (`-u`) rather than running `upload` alone after building for another
+board.
+
+The ESP32 core is pinned to 2.0.17. With core 3.x, M5Unified's speaker task
+overflows its stack and the device crashes on the first sound.
