@@ -20,14 +20,12 @@ libraries are installed automatically on the first build.
 | `core2` | M5Stack Core2 | GPIO 33 (Grove Port A) |
 | `core3` | M5Stack CoreS3 / CoreS3-SE (default) | GPIO 8 (Grove Port B) |
 
-```sh
-arduino-cli compile --profile core2                     # build only
-arduino-cli compile --profile core2 -u -p <serial-port> # build and upload
-```
+Build artifacts are kept per profile under `build/<profile>`:
 
-Both profiles share the same build directory, so build and upload in one
-command (`-u`) rather than running `upload` alone after building for another
-board.
+```sh
+arduino-cli compile --profile core2 --build-path build/core2
+arduino-cli upload  --profile core2 --build-path build/core2 -p <serial-port>
+```
 
 The ESP32 core is pinned to 2.0.17. With core 3.x, M5Unified's speaker task
 overflows its stack and the device crashes on the first sound.
