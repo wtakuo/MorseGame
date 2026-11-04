@@ -17,7 +17,7 @@ profiles:
       - M5Unified (0.2.28)
       - M5GFX (0.2.35)
 
-  core3:
+  cores3:
     notes: M5Stack CoreS3 (key on GPIO 8, Grove Port B)
     fqbn: esp32:esp32:m5stack-cores3
     platforms:
@@ -27,4 +27,4 @@ profiles:
       - M5Unified (0.2.28)
       - M5GFX (0.2.35)
 
-default_profile: core3
+default_profile: cores3

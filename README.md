@@ -18,7 +18,7 @@ libraries are installed automatically on the first build.
 | Profile | Board | Morse key pin |
 |---|---|---|
 | `core2` | M5Stack Core2 | GPIO 33 (Grove Port A) |
-| `core3` | M5Stack CoreS3 / CoreS3-SE (default) | GPIO 8 (Grove Port B) |
+| `cores3` | M5Stack CoreS3 / CoreS3-SE (default) | GPIO 8 (Grove Port B) |
 
 Build artifacts are kept per profile under `build/<profile>`:
 
