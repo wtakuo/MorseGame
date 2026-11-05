@@ -432,7 +432,6 @@ void iter() {
             dotDuration = (smoothingFactor * lastDotDuration +
                            (10 - smoothingFactor) * lastMarkLength) /
                           10;
-            scoreChanged = true;
             setTiming();
         }
         // end of charactoers
