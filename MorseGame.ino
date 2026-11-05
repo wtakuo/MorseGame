@@ -104,15 +104,33 @@ String words5[] = {
     "FINAL", "FORCE", "FRONT", "GLASS", "GREEN", "HAPPY", "IDEAL", "JOKER", "LAUGH", "MARCH", "MUSIC", "OFFER", "ORDER", "PARTY", "PEACE", "PLAIN"
 };
 
-int dotDuration = 60;
+// Speed tracking. The dot and dash lengths are averaged separately and the
+// dot/dash threshold sits midway between them, so a player whose dashes are
+// shorter than 3 dots, or who holds the last dot of a letter a little longer,
+// is still decoded correctly. When the last MARK_HISTORY marks contain both
+// short and long ones, both averages are taken from a two-cluster split of
+// them, so the estimate follows a new player within a character or two.
+// Tuned with tools/morse_sim.py.
+#define INITIAL_DOT_MS 80     // about 15 WPM
+#define MIN_DOT_MS 25         // about 48 WPM
+#define MAX_DOT_MS 300        // about 4 WPM
+#define MIN_DASH_RATIO 2.0f
+#define MAX_DASH_RATIO 4.0f
+#define BIMODAL_RATIO 2.0f    // longest/shortest mark that means "both kinds"
+#define AVG_WEIGHT 0.25f      // weight of a new mark in a running average
+#define LONG_PRESS_MS 1000    // marks longer than this (and 3 dashes) are ignored
+#define MARK_HISTORY 8
+
+float avgDot = INITIAL_DOT_MS;
+float avgDash = 3 * INITIAL_DOT_MS;
+unsigned int markHistory[MARK_HISTORY];
+byte markHistoryCount = 0;
+byte markHistoryNext = 0;
+
 int maxDotDuration;
-int maxDashDuration;
 int minDuration;
 int minWordGap;
 int minCharacterGap;
-
-int lastDotDuration = 0;
-byte smoothingFactor = 9;
 
 #define ITER_INTERVAL_MS 4
 #define DRAW_INTERVAL_MS 50
@@ -136,12 +154,73 @@ byte currentCharacterNumber;
 bool spaceFlag = 0;
 
 void setTiming() {
+    // keep the averages within the allowed speed and dash/dot ratio; when
+    // only one kind of mark has been seen, the other one follows it
+    avgDash = constrain(avgDash, MIN_DASH_RATIO * avgDot, MAX_DASH_RATIO * avgDot);
+    avgDot = constrain(avgDot, avgDash / MAX_DASH_RATIO, avgDash / MIN_DASH_RATIO);
+    avgDot = constrain(avgDot, (float)MIN_DOT_MS, (float)MAX_DOT_MS);
+    avgDash = constrain(avgDash, MIN_DASH_RATIO * avgDot, MAX_DASH_RATIO * avgDot);
+
     minDuration = 10;
-    maxDotDuration = 1.7 * dotDuration;
-    maxDashDuration = 15 * dotDuration;
-    minWordGap = 6.0 * dotDuration;
-    minCharacterGap = 1.8 * dotDuration;
-    lastDotDuration = dotDuration;
+    maxDotDuration = (avgDot + avgDash) / 2;
+    minCharacterGap = 2.0 * avgDot;
+    minWordGap = 6.0 * avgDot;
+}
+
+// Classify a mark as a dot (false) or a dash (true) and update the speed
+// estimate with it.
+bool classifyMark(unsigned int length) {
+    // resting on the key says nothing about the speed
+    if (length > max(3 * avgDash, (float)LONG_PRESS_MS)) {
+        return true;
+    }
+    markHistory[markHistoryNext] = length;
+    markHistoryNext = (markHistoryNext + 1) % MARK_HISTORY;
+    if (markHistoryCount < MARK_HISTORY) {
+        markHistoryCount++;
+    }
+
+    unsigned int lo = markHistory[0], hi = markHistory[0];
+    for (byte i = 1; i < markHistoryCount; i++) {
+        lo = min(lo, markHistory[i]);
+        hi = max(hi, markHistory[i]);
+    }
+    if (hi >= BIMODAL_RATIO * lo) {
+        // both dots and dashes in the history: split it into two clusters
+        float th = sqrtf((float)lo * hi);
+        float shortMean = lo, longMean = hi;
+        for (byte iter = 0; iter < 4; iter++) {
+            float shortSum = 0, longSum = 0;
+            byte shortN = 0, longN = 0;
+            for (byte i = 0; i < markHistoryCount; i++) {
+                if (markHistory[i] < th) {
+                    shortSum += markHistory[i];
+                    shortN++;
+                }
+                else {
+                    longSum += markHistory[i];
+                    longN++;
+                }
+            }
+            shortMean = shortSum / shortN;   // lo < th <= hi, so neither is 0
+            longMean = longSum / longN;
+            th = (shortMean + longMean) / 2;
+        }
+        avgDot = shortMean;
+        avgDash = longMean;
+        setTiming();
+        return length >= maxDotDuration;
+    }
+
+    bool isDash = length >= maxDotDuration;
+    if (isDash) {
+        avgDash += AVG_WEIGHT * (length - avgDash);
+    }
+    else {
+        avgDot += AVG_WEIGHT * (length - avgDot);
+    }
+    setTiming();
+    return isDash;
 }
 
 #define TONE_FREQ 600
@@ -400,12 +479,7 @@ void iter() {
             }
             else if (keyState == HIGH) {
                 lastMarkLength = changeTime - lastChangeTime;
-                if (lastMarkLength < maxDotDuration) {
-                    lastMarkType = 0;  // dot
-                }
-                else {
-                    lastMarkType = 1;  // dash
-                }
+                lastMarkType = classifyMark(lastMarkLength);  // 0 dot, 1 dash
                 newDataFlag = 1;
                 stateNow = 0;
                 M5.Speaker.stop(SIDETONE_CH);
@@ -435,14 +509,6 @@ void iter() {
                 bufferPosition++;
             }
             newDataFlag = 0;
-
-            if (lastMarkType == 1) {
-                lastMarkLength = lastMarkLength / 3;
-            }
-            dotDuration = (smoothingFactor * lastDotDuration +
-                           (10 - smoothingFactor) * lastMarkLength) /
-                          10;
-            setTiming();
         }
         // end of charactoers
         bool matchFound = 0;
