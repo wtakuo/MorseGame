@@ -289,6 +289,11 @@ void doGame() {
         gameState = GS_PLAYING;
     }
     else if (gameState == GS_PLAYING) {
+        // a word gap after the input was already judged or cleared ends
+        // an empty word; ignore it
+        if (wordCompleted && inputWord.equals("")) {
+            wordCompleted = false;
+        }
         if (challengeWord.equals("")) {
             if (level == 1) {
                 challengeWord = morsePlain[random(0, 26)];
@@ -316,7 +321,10 @@ void doGame() {
             // draw the full bar right away
             lastTimeBarUpdate = startTime - TIME_BAR_INTERVAL_MS;
         }
-        else if (wordCompleted && millis() < startTime + timeout) {
+        else if ((wordCompleted || inputWord.equals(challengeWord)) &&
+                 millis() < startTime + timeout) {
+            // judge a correct word as soon as its last character is
+            // decoded; a wrong one still waits for the word gap
             if (challengeWord.equals(inputWord)) {
                 M5.Speaker.tone(1600, 100, EFFECT_CH);
                 score += level * 10;
