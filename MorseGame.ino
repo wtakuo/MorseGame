@@ -133,11 +133,9 @@ int minWordGap;
 int minCharacterGap;
 
 #define ITER_INTERVAL_MS 4
-#define DRAW_INTERVAL_MS 50
 #define TIME_BAR_INTERVAL_MS 200
 
 unsigned long lastIterTime;
-// unsigned long lastDrawTime;
 
 int lastKeyState = HIGH;     // debounced key state
 unsigned long lastChangeTime = 0;
@@ -234,8 +232,6 @@ int keylampSize = 10;
 
 bool screenNeedsUpdate = true;
 bool keyOn = false;
-
-#define MAXINPUTTEXT 64
 
 int w, h;
 int keylampX, keylampY;
