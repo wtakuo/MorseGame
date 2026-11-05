@@ -198,16 +198,23 @@ bool classifyMark(unsigned int length) {
 #define EFFECT_CH 1
 
 int keylampSize = 10;
+#define SCORE_LINE_SPACING 22  // from the score line to the lives line
 
 bool screenNeedsUpdate = true;
 bool keyOn = false;
 
+// Screen layout, set by setDrawPosition() from the display size. The fonts
+// have a fixed pixel size, so the areas are placed relative to the screen
+// edges and centre rather than scaled.
 int w, h;
 int keylampX, keylampY;
 int inputTextX, inputTextY;
 float inputTextScale = 2.5;
 String inputText = "";
-int maxInputText = 19;
+int maxInputText;          // characters that fit on the input line
+int scoreX, scoreH;        // score and lives, top right
+int messageY, messageH;    // challenge / idle / game over, around the centre
+int timeBarY;              // remaining time, just below the message area
 bool inputTextChanged = true;
 bool scoreChanged = true;
 int score = 0;
@@ -235,6 +242,15 @@ void setDrawPosition() {
     M5.Display.setTextSize(inputTextScale);
     inputTextX = keylampSize * 2 + 7;
     inputTextY = h - M5.Display.fontHeight(M5.Display.getFont());
+    maxInputText = (w - inputTextX) / M5.Display.textWidth("W");
+
+    M5.Display.setTextSize(2);
+    scoreX = w / 2 + 16;
+    scoreH = SCORE_LINE_SPACING + M5.Display.fontHeight(M5.Display.getFont());
+
+    messageY = h / 2 - 50;
+    messageH = 96;
+    timeBarY = messageY + messageH + 2;
 }
 
 void drawScreen() {
@@ -258,19 +274,19 @@ void drawScreen() {
         inputTextChanged = false;
     }
     if (scoreChanged) {
-        M5.Display.fillRect(w / 2 + 16, 0, w / 2 - 16, 36, BLACK);
+        M5.Display.fillRect(scoreX, 0, w - scoreX, scoreH, BLACK);
         M5.Display.setTextColor(WHITE, BLACK);
         M5.Display.setFont(&fonts::Font0);
         M5.Display.setTextSize(2);
-        M5.Display.setCursor(w / 2 + 16, 0);
+        M5.Display.setCursor(scoreX, 0);
         M5.Display.printf("Score %04d", score);
-        M5.Display.setCursor(w / 2 + 16, 22);
+        M5.Display.setCursor(scoreX, SCORE_LINE_SPACING);
         M5.Display.printf("Lives %d", lives);
         scoreChanged = false;
     }
     if (challengeWordChanged) {
         if (gameState == GS_IDLE) {
-            M5.Display.fillRect(0, 70, w, 96, BLACK);
+            M5.Display.fillRect(0, messageY, w, messageH, BLACK);
             M5.Display.setTextColor(GREEN, BLACK);
             M5.Display.setFont(&fonts::Font2);
             String idleText1 = "TOUCH CENTER BUTTON";
@@ -284,7 +300,7 @@ void drawScreen() {
             M5.Display.print(idleText2);
         }
         else if (gameState == GS_GAMEOVER) {
-            M5.Display.fillRect(0, 70, w, 96, RED);
+            M5.Display.fillRect(0, messageY, w, messageH, RED);
             M5.Display.setTextColor(WHITE, RED);
             M5.Display.setFont(&fonts::Font4);
             // M5.Display.setTextSize(1);
@@ -295,7 +311,7 @@ void drawScreen() {
             M5.Display.print(gameOverText);
         }
         else {
-            M5.Display.fillRect(0, 70, w, 96, BLACK);
+            M5.Display.fillRect(0, messageY, w, messageH, BLACK);
             M5.Display.setTextColor(YELLOW, BLACK);
             M5.Display.setFont(&fonts::Font4);
             // M5.Display.setTextSize(1);
@@ -304,12 +320,15 @@ void drawScreen() {
             M5.Display.setCursor((w - ww) / 2, (h - hh) / 2);
             M5.Display.print(challengeWord);
         }
+        if (gameState != GS_PLAYING) {
+            M5.Display.drawFastHLine(0, timeBarY, w, BLACK);
+        }
         challengeWordChanged = false;
     }
     if (remainingTimeChanged) {
         int dx = w * (remainingTime / 2.0) / timeout;
-        M5.Display.drawLine(0, 160, w, 160, BLACK);
-        M5.Display.drawLine(w / 2 - dx, 160, w / 2 + dx, 160, YELLOW);
+        M5.Display.drawFastHLine(0, timeBarY, w, BLACK);
+        M5.Display.drawFastHLine(w / 2 - dx, timeBarY, 2 * dx, YELLOW);
         remainingTimeChanged = false;
     }
     M5.Display.endWrite();
