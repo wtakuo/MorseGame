@@ -15,63 +15,33 @@
 #endif
 #endif
 
-String morsePlain[] = {
-    "A",    "B",    "C",    "D",    "E",    "F",    "G",    "H",
-    "I",    "J",    "K",    "L",    "M",    "N",    "O",    "P",
-    "Q",    "R",    "S",    "T",    "U",    "V",    "W",    "X",
-    "Y",    "Z",    "0",    "1",    "2",    "3",    "4",    "5",
-    "6",    "7",    "8",    "9",    "!",    ".",    "?",    "/",    
-    "[AR]", "[BK]", "[BT]", "[HH]", "[SK]"
+// Morse code table. The first NUM_LETTERS entries are A-Z (level 1 picks
+// its challenges from them).
+struct MorseChar {
+    const char *text;
+    const char *code;  // '.' = dot, '-' = dash
 };
 
-byte morseCode[][9] = {
-    //  1 = dot, 2 = dash, 0 = not used
-    {1, 2, 0, 0, 0, 0, 0, 0, 0},  //  [0]    A   .-
-    {2, 1, 1, 1, 0, 0, 0, 0, 0},  //  [1]    B   -...
-    {2, 1, 2, 1, 0, 0, 0, 0, 0},  //  [2]    C   -.-.
-    {2, 1, 1, 0, 0, 0, 0, 0, 0},  //  [3]    D   -..
-    {1, 0, 0, 0, 0, 0, 0, 0, 0},  //  [4]    E   .
-    {1, 1, 2, 1, 0, 0, 0, 0, 0},  //  [5]    F   ..-.
-    {2, 2, 1, 0, 0, 0, 0, 0, 0},  //  [6]    G   --.
-    {1, 1, 1, 1, 0, 0, 0, 0, 0},  //  [7]    H   ....
-    {1, 1, 0, 0, 0, 0, 0, 0, 0},  //  [8]    I   ..
-    {1, 2, 2, 2, 0, 0, 0, 0, 0},  //  [9]    J   .---
-    {2, 1, 2, 0, 0, 0, 0, 0, 0},  //  [10]   K   -.-
-    {1, 2, 1, 1, 0, 0, 0, 0, 0},  //  [11]   L   .-..
-    {2, 2, 0, 0, 0, 0, 0, 0, 0},  //  [12]   M   --
-    {2, 1, 0, 0, 0, 0, 0, 0, 0},  //  [13]   N   -.
-    {2, 2, 2, 0, 0, 0, 0, 0, 0},  //  [14]   O   ---
-    {1, 2, 2, 1, 0, 0, 0, 0, 0},  //  [15]   P   .--.
-    {2, 2, 1, 2, 0, 0, 0, 0, 0},  //  [16]   Q   --.-
-    {1, 2, 1, 0, 0, 0, 0, 0, 0},  //  [17]   R   .-.
-    {1, 1, 1, 0, 0, 0, 0, 0, 0},  //  [18]   S   ...
-    {2, 0, 0, 0, 0, 0, 0, 0, 0},  //  [19]   T   -
-    {1, 1, 2, 0, 0, 0, 0, 0, 0},  //  [20]   U   ..-
-    {1, 1, 1, 2, 0, 0, 0, 0, 0},  //  [21]   V   ...-
-    {1, 2, 2, 0, 0, 0, 0, 0, 0},  //  [22]   W   .--
-    {2, 1, 1, 2, 0, 0, 0, 0, 0},  //  [23]   X   -..-
-    {2, 1, 2, 2, 0, 0, 0, 0, 0},  //  [24]   Y   -.--
-    {2, 2, 1, 1, 0, 0, 0, 0, 0},  //  [25]   Z   --..
-    {2, 2, 2, 2, 2, 0, 0, 0, 0},  //  [26]   0   -----
-    {1, 2, 2, 2, 2, 0, 0, 0, 0},  //  [27]   1   .----
-    {1, 1, 2, 2, 2, 0, 0, 0, 0},  //  [28]   2   ..---
-    {1, 1, 1, 2, 2, 0, 0, 0, 0},  //  [29]   3   ...--
-    {1, 1, 1, 1, 2, 0, 0, 0, 0},  //  [30]   4   ....-
-    {1, 1, 1, 1, 1, 0, 0, 0, 0},  //  [31]   5   .....
-    {2, 1, 1, 1, 1, 0, 0, 0, 0},  //  [32]   6   -....
-    {2, 2, 1, 1, 1, 0, 0, 0, 0},  //  [33]   7   --...
-    {2, 2, 2, 1, 1, 0, 0, 0, 0},  //  [34]   8   ---..
-    {2, 2, 2, 2, 1, 0, 0, 0, 0},  //  [35]   9   ----.
-    {2, 1, 2, 1, 2, 2, 0, 0, 0},  //  [36]   !   -.-.--
-    {1, 2, 1, 2, 1, 2, 0, 0, 0},  //  [37]   .   .-.-.-
-    {1, 1, 2, 2, 1, 1, 0, 0, 0},  //  [38]   ?   ..--..
-    {2, 1, 1, 2, 1, 0, 0, 0, 0},  //  [39]   /   -..-.
-    {1, 2, 1, 2, 1, 0, 0, 0, 0},  //  [40]   [AR] .-.-.
-    {2, 1, 1, 1, 2, 1, 2, 0, 0},  //  [41]   [BK] -...-.-
-    {2, 1, 1, 1, 2, 0, 0, 0, 0},  //  [42]   [BT] -...-
-    {1, 1, 1, 1, 1, 1, 1, 1, 0},  //  [43]   [HH] ........
-    {1, 1, 1, 2, 1, 2, 0, 0, 0},  //  [44]   [SK] ...-.-
+const MorseChar morseTable[] = {
+    {"A", ".-"}, {"B", "-..."}, {"C", "-.-."}, {"D", "-.."},
+    {"E", "."}, {"F", "..-."}, {"G", "--."}, {"H", "...."},
+    {"I", ".."}, {"J", ".---"}, {"K", "-.-"}, {"L", ".-.."},
+    {"M", "--"}, {"N", "-."}, {"O", "---"}, {"P", ".--."},
+    {"Q", "--.-"}, {"R", ".-."}, {"S", "..."}, {"T", "-"},
+    {"U", "..-"}, {"V", "...-"}, {"W", ".--"}, {"X", "-..-"},
+    {"Y", "-.--"}, {"Z", "--.."}, {"0", "-----"}, {"1", ".----"},
+    {"2", "..---"}, {"3", "...--"}, {"4", "....-"}, {"5", "....."},
+    {"6", "-...."}, {"7", "--..."}, {"8", "---.."}, {"9", "----."},
+    {"!", "-.-.--"}, {".", ".-.-.-"}, {"?", "..--.."}, {"/", "-..-."},
+    {"[AR]", ".-.-."}, {"[BK]", "-...-.-"}, {"[BT]", "-...-"}, {"[HH]", "........"},
+    {"[SK]", "...-.-"},
 };
+const int MORSE_TABLE_SIZE = sizeof(morseTable) / sizeof(morseTable[0]);
+const int NUM_LETTERS = 26;
+
+// marks of a character beyond MAX_MARKS are dropped; such a character is
+// decoded as unknown because no code in morseTable is that long
+#define MAX_MARKS 9
 
 String words2[] = {
     "AN", "AT", "AS", "BE", "BY", "DO", "GO", "HE", "IF", "IN", "IS", "IT",
@@ -146,9 +116,8 @@ bool newDataFlag = 0;
 bool lastMarkType = 0;
 unsigned int lastMarkLength;
 
-byte currentCharacter[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+char currentCharacter[MAX_MARKS + 1] = "";  // marks of the character being keyed
 byte bufferPosition = 0;
-byte currentCharacterNumber;
 bool spaceFlag = 0;
 
 void setTiming() {
@@ -371,7 +340,7 @@ void doGame() {
         }
         if (challengeWord.equals("")) {
             if (level == 1) {
-                challengeWord = morsePlain[random(0, 26)];
+                challengeWord = morseTable[random(0, NUM_LETTERS)].text;
                 timeout = 4000;
             }
             else if (level == 2) {
@@ -491,60 +460,33 @@ void iter() {
     if (stateNow == 0) {
         // constructing characters
         if (newDataFlag == 1) {
-            // marks beyond the buffer are dropped; the character is then
-            // unmatched because no code uses all 9 slots
-            if (bufferPosition < sizeof(currentCharacter)) {
-                if (lastMarkType == 0) {
-                    // Serial.print(".");
-                    currentCharacter[bufferPosition] = 1;
-                }
-                else {
-                    // Serial.print("-");
-                    currentCharacter[bufferPosition] = 2;
-                }
+            if (bufferPosition < MAX_MARKS) {
+                currentCharacter[bufferPosition] = lastMarkType == 0 ? '.' : '-';
                 bufferPosition++;
+                currentCharacter[bufferPosition] = '\0';
             }
             newDataFlag = 0;
         }
         // end of charactoers
-        bool matchFound = 0;
         if (millis() - lastChangeTime >= minCharacterGap &&
             bufferPosition != 0) {
-            for (byte c = 0; c < 45; c++) {
-                if (currentCharacter[0] == morseCode[c][0] &&
-                    currentCharacter[1] == morseCode[c][1] &&
-                    currentCharacter[2] == morseCode[c][2] &&
-                    currentCharacter[3] == morseCode[c][3] &&
-                    currentCharacter[4] == morseCode[c][4] &&
-                    currentCharacter[5] == morseCode[c][5] &&
-                    currentCharacter[6] == morseCode[c][6] &&
-                    currentCharacter[7] == morseCode[c][7] &&
-                    currentCharacter[8] == morseCode[c][8]) {
-                    currentCharacterNumber = c;
-                    matchFound = 1;
+            const char *s = "*";  // unknown character
+            for (int c = 0; c < MORSE_TABLE_SIZE; c++) {
+                if (strcmp(currentCharacter, morseTable[c].code) == 0) {
+                    s = morseTable[c].text;
                     break;
                 }
             }
-            if (matchFound != 1) {
-                currentCharacterNumber = 38;
-                inputWord += "*";
-                inputText += "*";
-            }
-            else {
-                String s = morsePlain[currentCharacterNumber];
-                // Serial.print(s);
-                inputWord += s;
-                inputText += s;
-            }
+            // Serial.print(s);
+            inputWord += s;
+            inputText += s;
             if (inputText.length() > maxInputText) {
                 inputText.remove(0, inputText.length() - maxInputText);
             }
             inputTextChanged = true;
             screenNeedsUpdate = true;
             spaceFlag = 1;
-            for (byte b = 0; b < 9; b++) {
-                currentCharacter[b] = 0;
-            }
+            currentCharacter[0] = '\0';
             bufferPosition = 0;
         }
         // end of words
