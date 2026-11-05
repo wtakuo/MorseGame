@@ -96,12 +96,12 @@ String words5[] = {
     "ABOUT", "THERE", "WHICH", "THEIR", "WOULD", "OTHER", "COULD", "FIRST",
     "THOSE", "MIGHT", "AFTER", "SHALL", "EVERY", "UNDER", "WORLD", "RIGHT",
     "PLACE", "SMALL", "FOUND", "GREAT", "HOUSE", "POINT", "THING", "WHERE",
-    "WHILE", "WORLD", "BEING", "GROUP", "SEEMS", "BELOW", "LEVEL", "LEAVE",
+    "WHILE", "BEING", "GROUP", "SEEMS", "BELOW", "LEVEL", "LEAVE",
     "STAND", "ORDER", "LIGHT", "WATER", "NIGHT", "STORY", "STILL", "YOUNG",
-    "MONTH", "BLACK", "SHORT", "LEVEL", "HEART", "TABLE", "CLASS", "VOICE",
+    "MONTH", "BLACK", "SHORT", "HEART", "TABLE", "CLASS", "VOICE",
     "POWER", "FIELD", "SPACE", "BOARD", "BREAK", "CHAIR", "CARRY", "CATCH",
     "COUNT", "CROSS", "DANCE", "DREAM", "DRINK", "EARLY", "ENTER", "FAITH",
-    "FINAL", "FORCE", "FRONT", "GLASS", "GREEN", "HAPPY", "IDEAL", "JOKER", "LAUGH", "MARCH", "MUSIC", "OFFER", "ORDER", "PARTY", "PEACE", "PLAIN"
+    "FINAL", "FORCE", "FRONT", "GLASS", "GREEN", "HAPPY", "IDEAL", "JOKER", "LAUGH", "MARCH", "MUSIC", "OFFER", "PARTY", "PEACE", "PLAIN"
 };
 
 // Speed tracking. The dot and dash lengths are averaged separately and the
