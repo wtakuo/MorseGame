@@ -116,6 +116,7 @@ byte smoothingFactor = 9;
 
 #define ITER_INTERVAL_MS 4
 #define DRAW_INTERVAL_MS 50
+#define TIME_BAR_INTERVAL_MS 200
 
 unsigned long lastIterTime;
 // unsigned long lastDrawTime;
@@ -174,7 +175,7 @@ int timeout;
 unsigned long startTime = 0;
 long remainingTime = 0;
 bool remainingTimeChanged = false;
-int timeCount = 0;
+unsigned long lastTimeBarUpdate = 0;
 int lives = 5;
 String challengeWord = "";
 bool challengeWordChanged = false;
@@ -312,7 +313,8 @@ void doGame() {
             startTime = millis();
             challengeWordChanged = true;
             screenNeedsUpdate = true;
-            timeCount = 50;
+            // draw the full bar right away
+            lastTimeBarUpdate = startTime - TIME_BAR_INTERVAL_MS;
         }
         else if (wordCompleted && millis() < startTime + timeout) {
             if (challengeWord.equals(inputWord)) {
@@ -352,11 +354,11 @@ void doGame() {
             scoreChanged = true;
             screenNeedsUpdate = true;
         }
-        if (--timeCount <= 0) {
-            remainingTime = timeout - (millis() - startTime);
+        if (millis() - lastTimeBarUpdate >= TIME_BAR_INTERVAL_MS) {
+            remainingTime = max(0L, (long)timeout - (long)(millis() - startTime));
             remainingTimeChanged = true;
             screenNeedsUpdate = true;
-            timeCount = 50;
+            lastTimeBarUpdate = millis();
         }
     }
     else if (gameState == GS_GAMEOVER) {
