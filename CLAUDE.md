@@ -29,7 +29,7 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 - ライブラリは sketch.yaml で両機種とも M5Unified 0.2.28 / M5GFX 0.2.35 に固定（PlatformIO 時代の Core2 は M5Unified 0.2.13 だった）
 - プロファイルでは 2.0.17 のボード ID はハイフン区切り（`m5stack-core2`, `m5stack-cores3`）。グローバルに入っている esp32 3.x はアンダースコア区切りで別物
 - エディタの clangd が出す `'M5Unified.h' file not found` 等は誤検出（ビルドは通る）
-- シリアルポート名は挿す USB ポートで変わる（CoreS3 は `<port>` や `<port>`）。`arduino-cli board list` で確認する
+- シリアルポート名は挿す USB ポートで変わる（CoreS3 は `<port>`、`<port>`、`<port>` など）。`arduino-cli board list` で確認する
 - CoreS3 は USB Serial/JTAG。シリアルポートを開くとチップがリセットされる。ポートを開いたままのプロセスがあると書き込みに失敗する（`lsof <port>` で確認）
 - 調査用のデバッグ出力は `#ifdef DEBUG_xxx` で囲み、`arduino-cli compile --profile <p> --build-property compiler.cpp.extra_flags=-DDEBUG_xxx` で有効化する（コミットはしない）。パニック時のバックトレースは `~/Library/Arduino15/packages/esp32/tools/` 以下のツールチェーンの `addr2line` で、`build/<profile>/MorseGame.ino.elf` に対して解決できる
 
@@ -55,6 +55,8 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 | `77be2dc` | PlatformIO から arduino-cli へ移行。`src/main.cpp` → `MorseGame.ino`、`platformio.ini` → `sketch.yaml`、キーピンを `-DKEY_PIN` からボードマクロでの自動選択に変更、README にビルド手順を追加 |
 | `bcf308c` | 成果物をプロファイルごとに `build/<profile>` に置く（`--build-path`） |
 | `c81bc58` | プロファイル名 `core3` を FQBN に合わせて `cores3` に変更 |
+| `e73fe5b` | 打鍵のたびにスコア欄を再描画していたのをやめる（`iter()` 内の `scoreChanged = true` を削除） |
+| `cd17538` | 残り時間バーを `millis()` 基準で 200ms（`TIME_BAR_INTERVAL_MS`）ごとに更新。新しいお題では即座に満タンで描画、残り時間は 0 で下限 |
 
 CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
@@ -66,15 +68,17 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 - 側音が押下から約 10ms 遅れても違和感はない
 - Core2 実機での動作全般（M5Unified 0.2.28 / M5GFX 0.2.35）
 
-## 次にやること（ユーザーに提案済み、3 以降は未着手）
+`e73fe5b` と `cd17538` は両実機に書き込み済みだが、動作は未確認（スコア・ライフ表示が正しく更新されるか、時間バーの減り方）。
+
+## 次にやること（ユーザーに提案済み、3 の一部まで完了）
 
 1. ~~`fix/bugs` を main にマージ~~（2026-11-04 済み）
 2. ~~M5Unified / M5GFX のバージョンを両環境でそろえて固定~~（sketch.yaml で 0.2.28 / 0.2.35 に固定、2026-11-06 に両実機で確認済み）
 3. 設計上の問題
    - 速度の自動追従: 初期値 60ms（約 20WPM）で遅い人は最初に誤判定する。長押しで推定が大きくずれる。短点長に上下限なし（`maxDashDuration` 未使用）。WPM 選択やキャリブレーション、短点・長点それぞれの平均から閾値を決める方式を検討
    - 正解判定を語間（短点 6 個分）まで待たず、`inputWord == challengeWord` になった時点で判定する
-   - 打鍵のたびに `scoreChanged = true` でスコア欄を再描画している（不要な描画で計時がぶれる）
-   - 残り時間バーの更新を `iter()` の呼び出し回数（`timeCount`）でなく `millis()` で行う
+   - ~~打鍵のたびにスコア欄を再描画している~~（`e73fe5b`）
+   - ~~残り時間バーの更新を `millis()` で行う~~（`cd17538`）
 4. 細かい点: 座標の決め打ち（320×240 前提）、1px の時間バーがお題描画領域（y=70〜165）と重なる、`morseCode`/`morsePlain` の並行配列とマジックナンバー `45`、`words5` の重複（WORLD, LEVEL, ORDER）、未使用変数（`MAXINPUTTEXT`, `maxDashDuration`, `DRAW_INTERVAL_MS` など）
 5. リファクタリング: モールス解読 / ゲーム状態遷移 / 表示・音 に分割、効果音の非同期シーケンサ
 6. 機能追加候補: WPM 選択、レベル表示、ハイスコア保存（NVS）、プレイ中の中断、レベル 1 に数字を出題
