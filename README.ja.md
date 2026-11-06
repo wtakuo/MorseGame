@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-バージョン 0.1.0
+バージョン 0.1.1
 
 モールス符号の送信（打鍵）を練習するためのゲームです。
 M5Stack Core2 と M5Stack CoreS3-SE で動作を確認しています。
