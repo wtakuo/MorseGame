@@ -2,7 +2,7 @@
 
 M5Stack 用のモールス打鍵練習ゲーム。画面に出る文字・単語を GPIO に接続したモールスキーで打鍵する。制限時間内に正しく打てないとペナルティ 1（コード上は `lives--`）、5 回でゲームオーバー。2025-11-15 の横浜緑ヶ丘高校ホームカミングデー展示用に作成。
 
-- バージョンは [Version.h](Version.h) の `MORSE_GAME_VERSION`（現在 0.1.0、2026-11-06 に設定。git のタグはまだ付けない）。README の先頭にも書いてあるので一緒に更新する
+- バージョンは [Version.h](Version.h) の `MORSE_GAME_VERSION`（2026-11-06 に 0.1.0 を設定、その後のバグ修正で 0.1.1。git のタグはまだ付けない）。README（日英）の先頭にも書いてあるので一緒に更新する
 - README は英語版 [README.md](README.md) と日本語版 [README.ja.md](README.ja.md)（互いに先頭でリンク）。内容を変えるときは両方を直す。ゲーム内で上がっていく段階は「stage / ステージ」、設定の難易度は「LEVEL / レベル」と書き分ける。末尾の一文は 2026-11-06 にユーザーが指定した文面（日本語版はイベント名を「牧綾緑のフェスティバル（横浜緑ケ丘高等学校ホームカミングデー）」、英語版は "Yokohama Midorigaoka High School Homecoming Day"。どちらも作者名は入れない）
 - コードはスケッチ直下のモジュールに分割（2026-11-06、`d34ef7e`）
   - [MorseGame.ino](MorseGame.ino): 各部品をつなぐだけ（`iter()` で 4ms ごとにキーを読み、解読してゲームを進める）
@@ -31,8 +31,9 @@ M5Stack 用のモールス打鍵練習ゲーム。画面に出る文字・単語
 
 ```sh
 arduino-cli compile --profile cores3 --build-path build/cores3 && arduino-cli compile --profile core2 --build-path build/core2   # 両機種ビルド
-arduino-cli upload --profile core2 --build-path build/core2 -p <port>   # Core2 に書き込み
-arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        # CoreS3 に書き込み
+arduino-cli board list                                                   # ポートを調べる
+arduino-cli upload --profile core2 --build-path build/core2 -p <port>     # Core2 に書き込み
+arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>   # CoreS3 に書き込み
 ```
 
 - `--build-path` を省くとスケッチ単位の共有キャッシュに出力され、別機種のビルド後に `upload` すると別チップのイメージを書こうとして失敗する（`Unexpected chip id in image`）
@@ -45,7 +46,8 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 - ライブラリは sketch.yaml で両機種とも M5Unified 0.2.28 / M5GFX 0.2.35 に固定（PlatformIO 時代の Core2 は M5Unified 0.2.13 だった）
 - プロファイルでは 2.0.17 のボード ID はハイフン区切り（`m5stack-core2`, `m5stack-cores3`）。グローバルに入っている esp32 3.x はアンダースコア区切りで別物
 - エディタの clangd が出す `'M5Unified.h' file not found` 等は誤検出（ビルドは通る）
-- シリアルポート名は挿す USB ポートで変わる（CoreS3 は `<port>`、`<port>`、`<port>` など。Core2 は 2 台あり `<port>` と `<port>`。CoreS3 も SE と SE なしの 2 台）。`arduino-cli board list` で確認する
+- シリアルポート名は機器や挿す USB ポートで変わるので、毎回 `arduino-cli board list` で確認する（CoreS3 は `usbmodem`、Core2 は `usbserial` を含む名前）。手元には Core2 が 2 台、CoreS3 が SE と SE なしの 2 台ある
+- **このファイルはリポジトリに入っているので、ポート名・MAC アドレス・シリアル番号など機器固有の情報は書かない**（ユーザーの方針。他のプロジェクトでも同様）
 - CoreS3 への書き込みが `Changing baud rate to 921600` の後 `No serial data received` で失敗し続けることがある（2026-11-06、シリアルモニタを強制終了した後に発生し、電源の入れ直し・USB の挿し直しでも直らなかった。`--no-stub` で一度書いた後は通常の upload に戻った）。esptool を直接 `--no-stub` で実行すると書ける（遅い）:
   `~/Library/Arduino15/internal/esp32_esptool_py_4.5.1_*/esptool --chip esp32s3 --port <port> --baud 921600 --before default_reset --after hard_reset --no-stub write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 build/cores3/MorseGame.ino.bootloader.bin 0x8000 build/cores3/MorseGame.ino.partitions.bin 0xe000 ~/Library/Arduino15/internal/esp32_esp32_2.0.17_*/tools/partitions/boot_app0.bin 0x10000 build/cores3/MorseGame.ino.bin`
 - CoreS3 は USB Serial/JTAG。シリアルポートを開くとチップがリセットされる。ポートを開いたままのプロセスがあると書き込みに失敗する（`lsof <port>` で確認）
