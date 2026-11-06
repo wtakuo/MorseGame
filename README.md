@@ -55,7 +55,7 @@ The levels:
 
 The settings and a high score for each level are kept in flash. The battery level is shown at the top right of the settings screen ("+" while charging).
 
-This game was created by Takuo Watanabe for an exhibition at the Yokohama Midorigaoka High School Homecoming Day held on November 15, 2025.
+This game was created for an exhibition at the Yokohama Midorigaoka High School Homecoming Day held on November 15, 2025.
 
 ## Building
 
