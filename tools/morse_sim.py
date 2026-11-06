@@ -6,11 +6,20 @@ contact bounce), samples it every 4 ms with the same debounce as iter(),
 and decodes it with interchangeable timing strategies so that changes to
 the decoder can be compared before they go to the hardware.
 
-    python3 tools/morse_sim.py
+    python3 tools/morse_sim.py               # compare the strategies
+    python3 tools/morse_sim.py --check-host  # firmware decoder vs WindowMeans
+
+--check-host builds tools/decoder_host.cpp with the firmware's
+MorseDecoder.cpp and checks that it decodes like WindowMeans (needs c++).
 """
 import difflib
+import subprocess
+import sys
+import tempfile
 import math
+import os
 import random
+import re
 import statistics
 
 CODES = {
@@ -20,7 +29,10 @@ CODES = {
     'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
     'Y': '-.--', 'Z': '--..',
 }
-DECODE = {v: k for k, v in CODES.items()}
+# decode with the firmware's table (letters, digits and prosigns)
+_TABLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'MorseCode.cpp')
+with open(_TABLE) as _f:
+    DECODE = {code: text for text, code in re.findall(r'\{"([^"]+)", "([.-]+)"\}', _f.read())}
 
 WORDS = ('CAT DOG SUN RUN SIT HIS USE ITS SIX AIR '
          'THIS SHIP FISH WISH BEST LIST SAID HEAT '
@@ -141,9 +153,10 @@ class TwoMeans:
         self.avg_dot = min(max(self.avg_dot, self.avg_dash / hi), self.avg_dash / lo)
         self.avg_dot = min(max(self.avg_dot, self.dot_range[0]), self.dot_range[1])
         self.avg_dash = min(max(self.avg_dash, lo * self.avg_dot), hi * self.avg_dot)
-        self.max_dot = self.avg_dot + self.split * (self.avg_dash - self.avg_dot)
-        self.char_gap = self.char_gap_k * self.avg_dot
-        self.word_gap = 6.0 * self.avg_dot
+        # truncated to whole ms like the int thresholds in the firmware
+        self.max_dot = int(self.avg_dot + self.split * (self.avg_dash - self.avg_dot))
+        self.char_gap = int(self.char_gap_k * self.avg_dot)
+        self.word_gap = int(6.0 * self.avg_dot)
 
     def mark(self, length):
         is_dash = length >= self.max_dot
@@ -335,5 +348,42 @@ def main():
               f' | 8->25 WPM {sw2[0]:4.0%} / {sw2[1]:4.0%}')
 
 
+def check_host():
+    """Decode the same traces with the firmware code and with WindowMeans."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    with tempfile.TemporaryDirectory() as tmp:
+        exe = os.path.join(tmp, 'decoder_host')
+        subprocess.run(['c++', '-std=c++17', '-O2', '-I', os.path.join(here, '..'), '-o', exe,
+                        os.path.join(here, 'decoder_host.cpp'),
+                        os.path.join(here, '..', 'MorseDecoder.cpp'),
+                        os.path.join(here, '..', 'MorseCode.cpp')], check=True)
+        dot = WindowMeans().avg_dot
+        cases, blocks = [], []
+        for kw in PROFILES.values():
+            for wpm in (6, 8, 10, 13, 16, 20, 25, 30):
+                for s in range(25):
+                    rnd = random.Random(s * 100 + wpm)
+                    words = [rnd.choice(WORDS) for _ in range(8)]
+                    edges, end = Keyer(wpm, **kw).edges(words, rnd)
+                    cases.append((edges, end))
+                    blocks.append(f'{dot}\n' + ''.join(f'{t:.3f} {lv}\n' for t, lv in edges)
+                                  + f'end {end:.3f}\n')
+        out = subprocess.run([exe], input=''.join(blocks), capture_output=True,
+                             text=True, check=True).stdout.split('\n')
+    diff = 0
+    for (edges, end), fw in zip(cases, out):
+        py = ' '.join(decode(edges, end, WindowMeans()))
+        if py != fw:
+            diff += 1
+            if diff <= 5:
+                print(f'  WindowMeans: {py}\n  firmware:    {fw}')
+    # float (firmware) and double (Python) can round a mark the other way
+    # right at a threshold, so allow a few differences
+    print(f'{diff} / {len(cases)} traces decoded differently')
+    return diff <= len(cases) // 100
+
+
 if __name__ == '__main__':
+    if '--check-host' in sys.argv[1:]:
+        sys.exit(0 if check_host() else 1)
     main()
