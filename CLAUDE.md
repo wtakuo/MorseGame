@@ -51,6 +51,7 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>   # Core
 - CoreS3 への書き込みが `Changing baud rate to 921600` の後 `No serial data received` で失敗し続けることがある（2026-11-06、シリアルモニタを強制終了した後に発生し、電源の入れ直し・USB の挿し直しでも直らなかった。`--no-stub` で一度書いた後は通常の upload に戻った）。esptool を直接 `--no-stub` で実行すると書ける（遅い）:
   `~/Library/Arduino15/internal/esp32_esptool_py_4.5.1_*/esptool --chip esp32s3 --port <port> --baud 921600 --before default_reset --after hard_reset --no-stub write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 build/cores3/MorseGame.ino.bootloader.bin 0x8000 build/cores3/MorseGame.ino.partitions.bin 0xe000 ~/Library/Arduino15/internal/esp32_esp32_2.0.17_*/tools/partitions/boot_app0.bin 0x10000 build/cores3/MorseGame.ino.bin`
 - CoreS3 は USB Serial/JTAG。シリアルポートを開くとチップがリセットされる。ポートを開いたままのプロセスがあると書き込みに失敗する（`lsof <port>` で確認）
+- スクリーンショット（README 用など）は `screenshot` ブランチにある（公開版のコードには入れない、ユーザーの方針）。使うときは main に rebase し、`--build-property compiler.cpp.extra_flags=-DSCREENSHOT` でビルドする。TF カードに `/morsegame_<状態>_<nn>.png` で保存（起動時にスプラッシュ、以降はシリアルで `s` を受けたとき）。手順は `Screenshot.h` の先頭。2026-11-06 に CoreS3 SE で 0.1.1 の各画面を撮影済み。`createPng()` は幅・高さを省略（0）すると nullptr を返す
 - 調査用のデバッグ出力は `#ifdef DEBUG_xxx` で囲み、`arduino-cli compile --profile <p> --build-property compiler.cpp.extra_flags=-DDEBUG_xxx` で有効化する（コミットはしない）。パニック時のバックトレースは `~/Library/Arduino15/packages/esp32/tools/` 以下のツールチェーンの `addr2line` で、`build/<profile>/MorseGame.ino.elf` に対して解決できる
 
 ## 作業の進め方
