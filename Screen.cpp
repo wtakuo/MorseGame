@@ -174,8 +174,11 @@ void Screen::drawMessage(const Game &game, const Settings &settings) {
         char highScore[32];
         snprintf(highScore, sizeof(highScore), "HIGH SCORE  %04d",
                  Storage::highScore(settings.difficulty));
+        // the same font as the score and lives at the top right
+        M5.Display.setFont(&fonts::Font0);
+        M5.Display.setTextSize(2);
         M5.Display.setTextColor(WHITE, BLACK);
-        centred(highScore, y + hh + 8);
+        centred(highScore, y + hh + 12);
     }
     else if (game.state() == Game::State::Paused) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, DARKGREY);
