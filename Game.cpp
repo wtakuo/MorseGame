@@ -19,6 +19,20 @@ void Game::start() {
     state_ = State::Playing;
 }
 
+void Game::setRules(const GameRules &rules) {
+    rules_ = rules;
+    if (state_ == State::Idle) {
+        lives_ = rules_.lives;
+        changes_ |= SCORE;
+    }
+}
+
+bool Game::takeEnded() {
+    bool e = ended_;
+    ended_ = false;
+    return e;
+}
+
 uint8_t Game::takeChanges() {
     uint8_t c = changes_;
     changes_ = 0;
@@ -26,7 +40,7 @@ uint8_t Game::takeChanges() {
 }
 
 void Game::newChallenge(uint32_t now) {
-    challenge_ = pickChallenge(level_);
+    challenge_ = pickChallenge(level_, rules_.digitsInLevel1);
     timeout_ = rules_.timeoutMs[level_ - 1];
     startTime_ = now;
     changes_ |= MESSAGE;
@@ -71,6 +85,7 @@ void Game::update(uint32_t now) {
             Sound::timeUp();
             if (lives_ <= 0) {
                 state_ = State::GameOver;
+                ended_ = true;
                 gameOverTime_ = now + GAME_OVER_MS;
                 changes_ |= MESSAGE;
             }

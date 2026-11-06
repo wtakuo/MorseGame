@@ -3,12 +3,14 @@
 
 #include <Arduino.h>
 
-// Parameters that will differ between difficulties.
+// Parameters that differ between difficulties (see rulesFor() in Settings).
+// The defaults are the intermediate rules.
 struct GameRules {
     static const int MAX_LEVEL = 5;
     uint32_t timeoutMs[MAX_LEVEL] = {4000, 7000, 10000, 12000, 15000};
     int successesPerLevel = 10;   // correct answers to go up a level
     int lives = 5;
+    bool digitsInLevel1 = true;   // level 1 asks digits as well as letters
 };
 
 class Game {
@@ -24,6 +26,9 @@ public:
 
     explicit Game(const GameRules &rules) : rules_(rules), lives_(rules.lives) {}
 
+    // Rules for the next game (takes effect at start()).
+    void setRules(const GameRules &rules);
+
     // Start a new game from the idle screen.
     void start();
 
@@ -35,6 +40,9 @@ public:
     void update(uint32_t now);
 
     uint8_t takeChanges();
+
+    // True once after a game has ended, with score() as the final score.
+    bool takeEnded();
 
     State state() const { return state_; }
     int score() const { return score_; }
@@ -50,7 +58,8 @@ private:
 
     void newChallenge(uint32_t now);
 
-    const GameRules &rules_;
+    GameRules rules_;
+    bool ended_ = false;
     State state_ = State::Idle;
     uint8_t changes_ = SCORE | MESSAGE;
     int score_ = 0;

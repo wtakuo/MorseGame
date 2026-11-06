@@ -44,10 +44,11 @@ const char *const words5[] = {
 
 }  // namespace
 
-const char *pickChallenge(int level) {
+const char *pickChallenge(int level, bool digits) {
     switch (level) {
     case 1:
-        return morseTable[random(0, NUM_LETTERS)].text;
+        // morseTable starts with the letters, then the digits
+        return morseTable[random(0, NUM_LETTERS + (digits ? NUM_DIGITS : 0))].text;
     case 2:
         return words2[random(0, COUNT(words2))];
     case 3:
