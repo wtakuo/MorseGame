@@ -80,8 +80,8 @@ void SettingsMenu::change(int step) {
         break;
     case VOLUME:
         s.volume = constrain(s.volume + step, 0, Settings::MAX_VOLUME);
+        // the click of the button (played after the change) has the new volume
         Sound::setVolume(s.speakerVolume());
-        Sound::correct();  // let the player hear the new volume
         break;
     case RESET:
     case CLEAR_SCORES:
@@ -222,10 +222,8 @@ void SettingsMenu::drawButtons() {
     for (int i = 0; i < 3; i++) {
         int x = w * i / 3 + 6, bw = w / 3 - 12, cx = x + bw / 2;
         M5.Display.drawRoundRect(x, h - BUTTON_H + 4, bw, BUTTON_H - 6, 6, DARKGREY);
-        if (i == 0) {
-            const char *label = "NEXT";
-            M5.Display.setCursor(cx - M5.Display.textWidth(label) / 2, cy - 8);
-            M5.Display.print(label);
+        if (i == 0) {        // down-pointing triangle: next item
+            M5.Display.fillTriangle(cx, cy + 7, cx - 8, cy - 7, cx + 8, cy - 7, WHITE);
         }
         else if (i == 1) {   // left-pointing triangle
             M5.Display.fillTriangle(cx - 8, cy, cx + 6, cy - 8, cx + 6, cy + 8, WHITE);

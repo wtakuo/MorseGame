@@ -46,6 +46,10 @@ void wrong() {
     twoNotes(1000, 50, 800, 50);
 }
 
+void click() {
+    M5.Speaker.tone(2000, 15, EFFECT_CH);
+}
+
 void timeUp() {
     twoNotes(800, 500, 700, 500);
 }

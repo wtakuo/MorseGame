@@ -114,11 +114,12 @@ void iter(uint32_t now) {
     }
 }
 
-// Button presses in the settings menu; - and + repeat while held on numbers.
+// Button presses in the settings menu, each with a click; < and > repeat
+// while held on numbers.
 void menuButtons() {
     static uint32_t nextRepeat = 0;
     uint32_t now = millis();
-    bool closed = false;
+    bool closed = false, pressed = true;
     if (M5.BtnA.wasPressed()) {
         closed = menu.press(SettingsMenu::Button::Next);
     }
@@ -132,6 +133,12 @@ void menuButtons() {
         menu.press(M5.BtnC.isPressed() ? SettingsMenu::Button::Plus
                                        : SettingsMenu::Button::Minus);
         nextRepeat = now + 100;
+    }
+    else {
+        pressed = false;
+    }
+    if (pressed) {
+        Sound::click();   // at the volume being set, if VOLUME changed
     }
     if (closed) {
         settings = menu.settings();

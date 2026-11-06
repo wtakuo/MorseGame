@@ -27,7 +27,7 @@ The three buttons below the screen (on the CoreS3, the bottom edge of the touch 
 | Title | Settings | Start | |
 | Playing | | Pause | |
 | Paused | Quit | Resume | |
-| Settings | Next item | - | + |
+| Settings | Next item (▼) | Previous value (◀) | Next value (▶) |
 
 Settings: key (STRAIGHT, IAMBIC-A, IAMBIC-B), speed (5-40 WPM; the keyer speed, or the starting speed for a straight key, which then follows the player), DIT/DAH order, level (EASY, NORMAL, HARD), volume, and reset to defaults. The settings and a high score for each level are kept in flash.
 

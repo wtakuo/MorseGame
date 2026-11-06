@@ -1,5 +1,5 @@
 // Settings screen, operated with the three buttons:
-//   left = next item, centre = previous value (<), right = next value (>).
+//   left = next item (v), centre = previous value (<), right = next value (>).
 // RESET and CLEAR SCORES ask for a second press to confirm.
 // On a CoreS3 the buttons are the bottom of the touch screen, where their
 // labels are drawn.

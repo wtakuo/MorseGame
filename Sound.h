@@ -14,5 +14,6 @@ void sidetoneOff();
 void correct();   // the word was keyed correctly
 void wrong();     // the word was keyed wrongly
 void timeUp();    // the time ran out
+void click();     // a button on the settings screen
 
 }  // namespace Sound
