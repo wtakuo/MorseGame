@@ -39,12 +39,18 @@ private:
 // still decoded correctly. When the last HISTORY marks contain both short
 // and long ones, both averages are taken from a two-cluster split of them,
 // so the estimate follows a new player within a character or two.
+//
+// The character and word gaps are measured in units estimated from the
+// dashes (1/3 of a dash) and from the gaps between the marks of a
+// character, not from the dots: some players flick very short dots (a
+// quarter of a unit or less), which made the character gap too short and
+// split their letters (J read as ETTT).
 class SpeedTracker {
 public:
     static const int MIN_DOT_MS = 25;        // about 48 WPM
     static const int MAX_DOT_MS = 300;       // about 4 WPM
     static constexpr float MIN_DASH_RATIO = 2.0f;
-    static constexpr float MAX_DASH_RATIO = 4.0f;
+    static constexpr float MAX_DASH_RATIO = 8.0f;
     static constexpr float BIMODAL_RATIO = 2.0f;  // longest/shortest mark meaning "both kinds"
     static constexpr float AVG_WEIGHT = 0.25f;    // weight of a new mark in a running average
     static const uint32_t LONG_PRESS_MS = 1000;   // longer marks (and 3 dashes) are ignored
@@ -58,9 +64,14 @@ public:
     // Classify a mark as a dot (false) or a dash (true) and update the
     // estimate with it.
     bool classify(uint32_t length);
+    // Tell the gap before a mark; gaps within a character update the unit.
+    void gap(uint32_t length);
 
     float dotLength() const { return avgDot_; }
     float dashLength() const { return avgDash_; }
+    float gapLength() const { return avgGap_; }
+    // The unit of the character and word gaps (for the WPM shown).
+    float unitLength() const { return unit_; }
     int maxDot() const { return maxDot_; }
     int charGap() const { return charGap_; }
     int wordGap() const { return wordGap_; }
@@ -70,6 +81,8 @@ private:
 
     float avgDot_ = 0;
     float avgDash_ = 0;
+    float avgGap_ = 0;     // gaps between the marks of a character
+    float unit_ = 0;
     uint32_t history_[HISTORY] = {};
     int historyCount_ = 0;
     int historyNext_ = 0;

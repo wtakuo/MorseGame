@@ -57,8 +57,12 @@ void iter(uint32_t now) {
     uint32_t lastChange;
     int charGap, wordGap;
     if (settings.keyMode == KeyMode::Straight) {
+        uint32_t lastRelease = key.lastChangeTime();
         changed = key.update(now, pinDown(KEY_PIN));
         down = key.isDown();
+        if (changed && down) {
+            speed.gap(key.lastChangeTime() - lastRelease);
+        }
         if (changed && !down) {
             dash = speed.classify(key.lastMarkLength());
         }
@@ -95,7 +99,7 @@ void iter(uint32_t now) {
             if (settings.keyMode == KeyMode::Straight) {
                 // updated per character rather than per mark, so that the
                 // redraw does not land between marks
-                screen.setWpm(lround(1200 / speed.dotLength()));
+                screen.setWpm(lround(1200 / speed.unitLength()));
             }
         }
         if (decoder.checkWordEnd(gap, wordGap)) {

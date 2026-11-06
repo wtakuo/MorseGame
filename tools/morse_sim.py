@@ -7,10 +7,10 @@ and decodes it with interchangeable timing strategies so that changes to
 the decoder can be compared before they go to the hardware.
 
     python3 tools/morse_sim.py               # compare the strategies
-    python3 tools/morse_sim.py --check-host  # firmware decoder vs WindowMeans
+    python3 tools/morse_sim.py --check-host  # firmware decoder vs UnitGaps
 
 --check-host builds tools/decoder_host.cpp with the firmware's
-MorseDecoder.cpp and checks that it decodes like WindowMeans (needs c++).
+MorseDecoder.cpp and checks that it decodes like UnitGaps (needs c++).
 """
 import difflib
 import subprocess
@@ -170,8 +170,8 @@ class TwoMeans:
 
 
 class WindowMeans(TwoMeans):
-    """The decoder in MorseGame.ino (classifyMark()): TwoMeans, plus a
-    window of the last `window` marks.
+    """The decoder of aaf1e06-2b18666: TwoMeans, plus a window of the last
+    `window` marks.
 
     When the window holds both short and long marks (longest/shortest >=
     `bimodal`), the dot and dash averages are taken directly from a
@@ -207,6 +207,33 @@ class WindowMeans(TwoMeans):
         return super().mark(length)
 
 
+class UnitGaps(WindowMeans):
+    """The decoder in MorseDecoder.cpp (SpeedTracker): WindowMeans with a
+    wider dash/dot ratio, and the character and word gaps measured in a
+    unit taken from the dashes (1/3) and the gaps within characters rather
+    than from the dots, which some players flick very short."""
+
+    MIN_DOT = 25
+
+    def __init__(self, dot=80, name=None, **kw):
+        self.avg_gap = dot
+        kw.setdefault('ratio', (2.0, 8.0))
+        super().__init__(dot=dot, name=name or 'unit-gaps', **kw)
+
+    def update(self):
+        super().update()
+        self.unit = (self.avg_dash / 3 + self.avg_gap) / 2
+        self.char_gap = int(2.0 * self.unit)
+        self.word_gap = int(6.0 * self.unit)
+
+    def gap(self, length):
+        if length < self.MIN_DOT or length >= self.char_gap:
+            return
+        self.avg_gap += self.alpha * (length - self.avg_gap)
+        self.avg_gap = min(max(self.avg_gap, self.dot_range[0]), self.dot_range[1])
+        self.update()
+
+
 # --------------------------------------------------------------- decoder
 
 def decode(edges, end, strategy):
@@ -223,6 +250,8 @@ def decode(edges, end, strategy):
         if level_at != last and t - raw_t >= DEBOUNCE_MS:
             if level_at == 1:
                 buf += '-' if strategy.mark(raw_t - last_t) else '.'
+            elif hasattr(strategy, 'gap'):
+                strategy.gap(raw_t - last_t)
             last, last_t = level_at, raw_t
         if last == 1:
             if buf and t - last_t >= strategy.char_gap:
@@ -245,6 +274,8 @@ PROFILES = {
     'last-hold':  dict(ratio=3.0, jitter=0.12, last_hold=1.4),
     'typical':    dict(ratio=2.6, jitter=0.15, last_hold=1.2),
     'short-dash': dict(ratio=2.3, jitter=0.15),
+    # like a player logged on a CoreS3: very short flicked dots, short gaps
+    'flick':      dict(ratio=3.0, jitter=0.2, dot_scale=0.45, gap_scale=0.8),
 }
 
 
@@ -326,6 +357,7 @@ def main():
     strategies = {
         'current': lambda: Current(),
         'window': lambda: WindowMeans(),
+        'unit': lambda: UnitGaps(),
     }
     print('Word accuracy: first 2 words (cold start) / later words; '
           'S, I = rate of S and I misread after 5 words')
@@ -349,7 +381,7 @@ def main():
 
 
 def check_host():
-    """Decode the same traces with the firmware code and with WindowMeans."""
+    """Decode the same traces with the firmware code and with UnitGaps."""
     here = os.path.dirname(os.path.abspath(__file__))
     with tempfile.TemporaryDirectory() as tmp:
         exe = os.path.join(tmp, 'decoder_host')
@@ -357,7 +389,7 @@ def check_host():
                         os.path.join(here, 'decoder_host.cpp'),
                         os.path.join(here, '..', 'MorseDecoder.cpp'),
                         os.path.join(here, '..', 'MorseCode.cpp')], check=True)
-        dot = WindowMeans().avg_dot
+        dot = UnitGaps().avg_dot
         cases, blocks = [], []
         for kw in PROFILES.values():
             for wpm in (6, 8, 10, 13, 16, 20, 25, 30):
@@ -372,11 +404,11 @@ def check_host():
                              text=True, check=True).stdout.split('\n')
     diff = 0
     for (edges, end), fw in zip(cases, out):
-        py = ' '.join(decode(edges, end, WindowMeans()))
+        py = ' '.join(decode(edges, end, UnitGaps()))
         if py != fw:
             diff += 1
             if diff <= 5:
-                print(f'  WindowMeans: {py}\n  firmware:    {fw}')
+                print(f'  UnitGaps: {py}\n  firmware: {fw}')
     # float (firmware) and double (Python) can round a mark the other way
     # right at a threshold, so allow a few differences
     print(f'{diff} / {len(cases)} traces decoded differently')

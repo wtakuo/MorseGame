@@ -29,6 +29,7 @@ bool StraightKey::update(uint32_t now, bool rawDown) {
 void SpeedTracker::reset(float dotMs) {
     avgDot_ = dotMs;
     avgDash_ = 3 * dotMs;
+    avgGap_ = dotMs;
     historyCount_ = 0;
     historyNext_ = 0;
     updateThresholds();
@@ -43,8 +44,20 @@ void SpeedTracker::updateThresholds() {
     avgDash_ = std::min(std::max(avgDash_, MIN_DASH_RATIO * avgDot_), MAX_DASH_RATIO * avgDot_);
 
     maxDot_ = (avgDot_ + avgDash_) / 2;
-    charGap_ = 2.0 * avgDot_;
-    wordGap_ = 6.0 * avgDot_;
+    unit_ = (avgDash_ / 3 + avgGap_) / 2;
+    charGap_ = 2.0 * unit_;
+    wordGap_ = 6.0 * unit_;
+}
+
+void SpeedTracker::gap(uint32_t length) {
+    // a gap shorter than the shortest dot is contact bounce; one of a
+    // character gap or longer is not between marks of a character
+    if (length < (uint32_t)MIN_DOT_MS || length >= (uint32_t)charGap_) {
+        return;
+    }
+    avgGap_ += AVG_WEIGHT * (length - avgGap_);
+    avgGap_ = std::min(std::max(avgGap_, (float)MIN_DOT_MS), (float)MAX_DOT_MS);
+    updateThresholds();
 }
 
 bool SpeedTracker::classify(uint32_t length) {

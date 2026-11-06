@@ -32,8 +32,14 @@ static std::string decode(float dotMs, const std::vector<std::pair<double, int>>
         while (i < edges.size() && edges[i].first <= now) {
             level = edges[i++].second;
         }
-        if (key.update(now, level == 0) && !key.isDown()) {
-            decoder.addMark(speed.classify(key.lastMarkLength()));
+        uint32_t lastRelease = key.lastChangeTime();
+        if (key.update(now, level == 0)) {
+            if (key.isDown()) {
+                speed.gap(key.lastChangeTime() - lastRelease);
+            }
+            else {
+                decoder.addMark(speed.classify(key.lastMarkLength()));
+            }
         }
         if (!key.isDown()) {
             uint32_t gap = now - key.lastChangeTime();
