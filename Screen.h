@@ -5,22 +5,26 @@
 #include <Arduino.h>
 
 #include "Game.h"
+#include "Settings.h"
 
 class Screen {
 public:
-    // Compute the layout from the display size and draw the title.
+    // Compute the layout from the display size and draw the screen.
     void begin();
+    // Clear the screen and draw everything again (after the settings menu).
+    void redrawAll();
 
     void setKeyLamp(bool on);
     // Append decoded text (a character or " " at the end of a word).
     void appendInput(const char *text);
 
     // Redraw what changed in the game or the input; call every loop.
-    void update(Game &game);
+    void update(Game &game, const Settings &settings);
 
 private:
+    void drawTitle(const Settings &settings);
     void drawScore(const Game &game);
-    void drawMessage(const Game &game);
+    void drawMessage(const Game &game, const Settings &settings);
     void drawTimeBar(const Game &game);
 
     // Layout, set by begin() from the display size. The fonts have a fixed
@@ -39,6 +43,7 @@ private:
 
     String inputText_;
     bool keyOn_ = false;
+    bool redrawAll_ = true;
     bool keyLampChanged_ = true;
     bool inputTextChanged_ = true;
 };

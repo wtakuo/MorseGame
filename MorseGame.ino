@@ -2,10 +2,13 @@
 //
 //   Config.h         pins and loop timing
 //   MorseCode.*      Morse code table
-//   MorseDecoder.*   straight key debounce, speed tracking, characters
+//   MorseDecoder.*   straight key debounce and speed tracking, iambic
+//                    keyer, characters and words
 //   Game.*           game state, judgement, score and levels
 //   Words.*          challenge words
-//   Screen.*         drawing
+//   Settings.*       settings, difficulty rules, NVS storage, high scores
+//   SettingsMenu.*   settings screen
+//   Screen.*         drawing of the game screen
 //   Sound.*          sidetone and sound effects
 
 #include <M5Unified.h>
@@ -14,44 +17,118 @@
 #include "Game.h"
 #include "MorseDecoder.h"
 #include "Screen.h"
+#include "Settings.h"
+#include "SettingsMenu.h"
 #include "Sound.h"
 
-const float INITIAL_DOT_MS = 80;  // about 15 WPM
-const uint8_t VOLUME = 220;
-
-GameRules rules;
-Game game(rules);
+Settings settings;
+Game game(rulesFor(settings.difficulty));
 Screen screen;
+SettingsMenu menu;
+bool inMenu = false;
+
+// straight key on KEY_PIN, or paddles on KEY_PIN (DIT) and KEY_PIN2 (DAH)
 StraightKey key;
-SpeedTracker speed(INITIAL_DOT_MS);
+StraightKey ditPaddle, dahPaddle;  // debounced like a straight key
+IambicKeyer keyer;
+SpeedTracker speed(80);
 CharacterDecoder decoder;
 
 uint32_t lastIterTime;
 
+// Make the settings take effect.
+void applySettings() {
+    Sound::setVolume(settings.speakerVolume());
+    game.setRules(rulesFor(settings.difficulty));
+    speed.reset(settings.dotMs());
+    keyer.configure(settings.keyMode == KeyMode::IambicB ? IambicKeyer::Mode::B
+                                                         : IambicKeyer::Mode::A,
+                    settings.dotMs());
+}
+
+bool pinDown(int pin) {
+    return digitalRead(pin) == LOW;
+}
+
 // Sample the key, decode it and advance the game.
 void iter(uint32_t now) {
-    if (key.update(now, digitalRead(KEY_PIN) == LOW)) {
-        if (key.isDown()) {
+    bool changed, down, dash = false;
+    uint32_t lastChange;
+    int charGap, wordGap;
+    if (settings.keyMode == KeyMode::Straight) {
+        changed = key.update(now, pinDown(KEY_PIN));
+        down = key.isDown();
+        if (changed && !down) {
+            dash = speed.classify(key.lastMarkLength());
+        }
+        lastChange = key.lastChangeTime();
+        charGap = speed.charGap();
+        wordGap = speed.wordGap();
+    }
+    else {
+        ditPaddle.update(now, pinDown(settings.swapPaddles ? KEY_PIN2 : KEY_PIN));
+        dahPaddle.update(now, pinDown(settings.swapPaddles ? KEY_PIN : KEY_PIN2));
+        changed = keyer.update(now, ditPaddle.isDown(), dahPaddle.isDown());
+        down = keyer.isDown();
+        dash = keyer.lastElementDash();
+        lastChange = keyer.lastChangeTime();
+        charGap = keyer.charGap();
+        wordGap = keyer.wordGap();
+    }
+
+    if (changed) {
+        if (down) {
             Sound::sidetoneOn();
         }
         else {
-            decoder.addMark(speed.classify(key.lastMarkLength()));
+            decoder.addMark(dash);
             Sound::sidetoneOff();
         }
-        screen.setKeyLamp(key.isDown());
+        screen.setKeyLamp(down);
     }
-    if (!key.isDown()) {
-        uint32_t gap = now - key.lastChangeTime();
-        if (const char *text = decoder.checkCharacterEnd(gap, speed.charGap())) {
+    if (!down) {
+        uint32_t gap = now - lastChange;
+        if (const char *text = decoder.checkCharacterEnd(gap, charGap)) {
             game.addCharacter(text);
             screen.appendInput(text);
         }
-        if (decoder.checkWordEnd(gap, speed.wordGap())) {
+        if (decoder.checkWordEnd(gap, wordGap)) {
             game.endWord();
             screen.appendInput(" ");
         }
     }
     game.update(now);
+    if (game.takeEnded() && game.score() > Storage::highScore(settings.difficulty)) {
+        Storage::setHighScore(settings.difficulty, game.score());
+    }
+}
+
+// Button presses in the settings menu; - and + repeat while held on numbers.
+void menuButtons() {
+    static uint32_t nextRepeat = 0;
+    uint32_t now = millis();
+    bool closed = false;
+    if (M5.BtnA.wasPressed()) {
+        closed = menu.press(SettingsMenu::Button::Next);
+    }
+    else if (M5.BtnB.wasPressed() || M5.BtnC.wasPressed()) {
+        closed = menu.press(M5.BtnC.wasPressed() ? SettingsMenu::Button::Plus
+                                                 : SettingsMenu::Button::Minus);
+        nextRepeat = now + 500;
+    }
+    else if (menu.repeats() && (M5.BtnB.isPressed() || M5.BtnC.isPressed()) &&
+             now >= nextRepeat) {
+        menu.press(M5.BtnC.isPressed() ? SettingsMenu::Button::Plus
+                                       : SettingsMenu::Button::Minus);
+        nextRepeat = now + 100;
+    }
+    if (closed) {
+        settings = menu.settings();
+        Storage::saveSettings(settings);
+        applySettings();
+        inMenu = false;
+        screen.redrawAll();
+    }
 }
 
 void setup() {
@@ -60,20 +137,37 @@ void setup() {
     cfg.serial_baudrate = 115200;
     M5.begin(cfg);
     pinMode(KEY_PIN, INPUT_PULLUP);
+    pinMode(KEY_PIN2, INPUT_PULLUP);
+    Storage::begin();
+    Storage::loadSettings(settings);
+    applySettings();
     screen.begin();
-    Sound::begin(VOLUME);
     lastIterTime = millis();
 }
 
 void loop() {
     uint32_t t = millis();
     M5.update();
+    if (inMenu) {
+        menuButtons();
+        if (inMenu) {
+            menu.update();
+        }
+        return;
+    }
     if (M5.BtnB.wasPressed()) {
         game.start();
+    }
+    if (M5.BtnA.wasPressed() && game.state() == Game::State::Idle) {
+        Sound::sidetoneOff();
+        menu.open(settings);
+        inMenu = true;
+        menu.update();
+        return;
     }
     if (t - lastIterTime >= ITER_INTERVAL_MS) {
         iter(t);
         lastIterTime = t;
     }
-    screen.update(game);
+    screen.update(game, settings);
 }

@@ -5,12 +5,6 @@
 void Screen::begin() {
     w_ = M5.Display.width();
     h_ = M5.Display.height();
-    M5.Display.fillScreen(BLACK);
-    M5.Display.setFont(&fonts::Font2);
-    M5.Display.setTextColor(CYAN, BLACK);
-    M5.Display.setTextSize(2);
-    M5.Display.setCursor(0, 0);
-    M5.Display.print("Morse Game");
 
     keylampX_ = KEYLAMP_SIZE + 1;
     keylampY_ = h_ - KEYLAMP_SIZE - 2;
@@ -27,6 +21,25 @@ void Screen::begin() {
     messageY_ = h_ / 2 - 50;
     messageH_ = 96;
     timeBarY_ = messageY_ + messageH_ + 2;
+    redrawAll();
+}
+
+void Screen::redrawAll() {
+    redrawAll_ = true;
+}
+
+void Screen::drawTitle(const Settings &settings) {
+    M5.Display.setFont(&fonts::Font2);
+    M5.Display.setTextColor(CYAN, BLACK);
+    M5.Display.setTextSize(2);
+    M5.Display.setCursor(0, 0);
+    M5.Display.print("Morse Game");
+    // the current settings, under the title
+    M5.Display.setTextSize(1);
+    M5.Display.setTextColor(LIGHTGREY, BLACK);
+    M5.Display.setCursor(0, scoreH_ + 2);
+    M5.Display.printf("%s  %d WPM  %s", keyModeName(settings.keyMode), settings.wpm,
+                      difficultyName(settings.difficulty));
 }
 
 void Screen::setKeyLamp(bool on) {
@@ -42,12 +55,21 @@ void Screen::appendInput(const char *text) {
     inputTextChanged_ = true;
 }
 
-void Screen::update(Game &game) {
+void Screen::update(Game &game, const Settings &settings) {
     uint8_t changes = game.takeChanges();
+    if (redrawAll_) {
+        changes = Game::SCORE | Game::MESSAGE | Game::TIME_BAR;
+        keyLampChanged_ = inputTextChanged_ = true;
+    }
     if (!changes && !keyLampChanged_ && !inputTextChanged_) {
         return;
     }
     M5.Display.startWrite();
+    if (redrawAll_) {
+        M5.Display.fillScreen(BLACK);
+        drawTitle(settings);
+        redrawAll_ = false;
+    }
     M5.Display.fillCircle(keylampX_, keylampY_, KEYLAMP_SIZE, keyOn_ ? GREEN : BLACK);
     keyLampChanged_ = false;
     if (inputTextChanged_) {
@@ -63,9 +85,9 @@ void Screen::update(Game &game) {
         drawScore(game);
     }
     if (changes & Game::MESSAGE) {
-        drawMessage(game);
+        drawMessage(game, settings);
     }
-    if (changes & Game::TIME_BAR) {
+    if ((changes & Game::TIME_BAR) && game.state() == Game::State::Playing) {
         drawTimeBar(game);
     }
     M5.Display.endWrite();
@@ -82,20 +104,23 @@ void Screen::drawScore(const Game &game) {
     M5.Display.printf("Lives %d", game.lives());
 }
 
-void Screen::drawMessage(const Game &game) {
+void Screen::drawMessage(const Game &game, const Settings &settings) {
     if (game.state() == Game::State::Idle) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, BLACK);
         M5.Display.setTextColor(GREEN, BLACK);
         M5.Display.setFont(&fonts::Font2);
-        const char *idleText1 = "TOUCH CENTER BUTTON";
-        const char *idleText2 = "TO START";
-        int ww1 = M5.Display.textWidth(idleText1);
-        int ww2 = M5.Display.textWidth(idleText2);
+        M5.Display.setTextSize(1);
+        char highScore[32];
+        snprintf(highScore, sizeof(highScore), "HIGH SCORE  %04d",
+                 Storage::highScore(settings.difficulty));
+        const char *lines[] = {"CENTER BUTTON: START", "LEFT BUTTON: SETTINGS", highScore};
         int hh = M5.Display.fontHeight(M5.Display.getFont());
-        M5.Display.setCursor((w_ - ww1) / 2, (h_ - hh) / 2 - 10);
-        M5.Display.print(idleText1);
-        M5.Display.setCursor((w_ - ww2) / 2, (h_ - hh) / 2 + hh - 4);
-        M5.Display.print(idleText2);
+        int y = messageY_ + (messageH_ - 3 * (hh + 6)) / 2;
+        for (const char *line : lines) {
+            M5.Display.setCursor((w_ - M5.Display.textWidth(line)) / 2, y);
+            M5.Display.print(line);
+            y += hh + 6;
+        }
     }
     else if (game.state() == Game::State::GameOver) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, RED);
