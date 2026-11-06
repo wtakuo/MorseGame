@@ -11,7 +11,7 @@ M5Stack 用のモールス打鍵練習ゲーム。画面に出る文字・単語
   - [Game.h](Game.h) / [.cpp](Game.cpp): ゲーム状態・判定・スコア・レベル。難易度で変える値は `GameRules`。画面への変更通知は `takeChanges()` のビットフラグ
   - [Words.h](Words.h) / [.cpp](Words.cpp): 出題単語、`pickChallenge(level)`
   - [Settings.h](Settings.h) / [.cpp](Settings.cpp): 設定値 `Settings`、難易度ごとの `rulesFor()`、NVS（`Preferences`、名前空間 `morsegame`）への保存とハイスコア（`Storage`）
-  - [SettingsMenu.h](SettingsMenu.h) / [.cpp](SettingsMenu.cpp): 設定画面（左=次の項目、中=-、右=+。CoreS3 では開いている間だけ `M5.setTouchButtonHeight(36)` で画面下端をボタンにする）
+  - [SettingsMenu.h](SettingsMenu.h) / [.cpp](SettingsMenu.cpp): 設定画面（左=次の項目 ▼、中=前の値 ◀、右=次の値 ▶。ボタンごとにクリック音。右上に電池残量。CoreS3 では開いている間だけ `M5.setTouchButtonHeight(36)` で画面下端をボタンにする）
   - [Screen.h](Screen.h) / [.cpp](Screen.cpp): ゲーム画面のレイアウトと描画。M5GFX は文字サイズがフォント切り替え後も残るので、描画ごとに `setTextSize` を明示する
   - [Sound.h](Sound.h) / [.cpp](Sound.cpp): 側音と効果音
   - MorseCode と MorseDecoder は Arduino 非依存（時刻は引数で渡す）。PC でもビルドでき、`tools/decoder_host.cpp` からシミュレータで検証する。ここに Arduino 依存を持ち込まない
@@ -95,6 +95,7 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 | `9cdced4` | ストレートキーの文字間・語間を、短点でなく「長点の 1/3 と文字内の符号間隔の平均の平均」を単位に決める。長点/短点比の上限 4 → 8 |
 | `7e20c88` | バージョン 0.1.0（`Version.h`）、起動時・リセット時に 3 秒のスプラッシュ画面（タイトル、バージョン、作者 "Takuo Watanabe (JM1TEU) w/ Claude"） |
 | `84a87a9` | 設定画面の右上に電池残量（%）。充電中は先頭に + |
+| `05b6d80` | 設定画面の「次の項目」ボタンを ▼ に。設定画面のボタン操作ごとにクリック音（設定中の音量。VOLUME 変更時の確認音を置き換え） |
 
 CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
@@ -118,7 +119,9 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
 `8ac555e`〜`9cdced4` は 2026-11-06 にユーザーが確認: ストレートキーの認識は「かなり満足」、WPM 表示が打つ速さで変わる、設定画面と操作の変更、音量の既定値、いずれも OK。
 
-`7e20c88`・`84a87a9` は両実機に書き込み済み、実機未確認。
+`7e20c88`・`84a87a9` も 2026-11-06 にユーザーが確認済み（スプラッシュ画面、電池表示）。
+
+`05b6d80` は両実機に書き込み済み、実機未確認。
 
 追従不良の調査（2026-11-06）: `DEBUG_MARKS` 版（打鍵ごとの長さ・間隔・推定値をシリアルに出す。コミットしていない）で CoreS3 のログを取った。ユーザーが速く打つと、短点は 14〜60ms と極端に短く（弾くような打ち方）、長点 210〜340ms、文字内の間隔 40〜90ms。旧方式は長点を短点の 4 倍に制限し、文字間を短点 2 個分（60〜100ms）にしていたため文字が割れていた。ログを `decoder_host` で再生すると旧方式で実機と同じ誤り（ETTT など）が再現し、新方式ではほぼすべて J になった。残る誤りは長点中の 16ms の隙間（バタつき）と、デバウンス 10ms より短いと思われる短点の欠落
 - ログからの再生: ログの gap/mark 行から押下・解放の時刻列を組み立てて `decoder_host` に流す（スクリプトは未コミット。必要なら `tools/` に入れる）
