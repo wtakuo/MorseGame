@@ -45,7 +45,7 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 - ライブラリは sketch.yaml で両機種とも M5Unified 0.2.28 / M5GFX 0.2.35 に固定（PlatformIO 時代の Core2 は M5Unified 0.2.13 だった）
 - プロファイルでは 2.0.17 のボード ID はハイフン区切り（`m5stack-core2`, `m5stack-cores3`）。グローバルに入っている esp32 3.x はアンダースコア区切りで別物
 - エディタの clangd が出す `'M5Unified.h' file not found` 等は誤検出（ビルドは通る）
-- シリアルポート名は挿す USB ポートで変わる（CoreS3 は `<port>`、`<port>`、`<port>` など）。`arduino-cli board list` で確認する
+- シリアルポート名は挿す USB ポートで変わる（CoreS3 は `<port>`、`<port>`、`<port>` など。Core2 は 2 台あり `<port>` と `<port>`。CoreS3 も SE と SE なしの 2 台）。`arduino-cli board list` で確認する
 - CoreS3 への書き込みが `Changing baud rate to 921600` の後 `No serial data received` で失敗し続けることがある（2026-11-06、シリアルモニタを強制終了した後に発生し、電源の入れ直し・USB の挿し直しでも直らなかった。`--no-stub` で一度書いた後は通常の upload に戻った）。esptool を直接 `--no-stub` で実行すると書ける（遅い）:
   `~/Library/Arduino15/internal/esp32_esptool_py_4.5.1_*/esptool --chip esp32s3 --port <port> --baud 921600 --before default_reset --after hard_reset --no-stub write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 build/cores3/MorseGame.ino.bootloader.bin 0x8000 build/cores3/MorseGame.ino.partitions.bin 0xe000 ~/Library/Arduino15/internal/esp32_esp32_2.0.17_*/tools/partitions/boot_app0.bin 0x10000 build/cores3/MorseGame.ino.bin`
 - CoreS3 は USB Serial/JTAG。シリアルポートを開くとチップがリセットされる。ポートを開いたままのプロセスがあると書き込みに失敗する（`lsof <port>` で確認）
@@ -102,6 +102,7 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 | `a47874f` | 日本語版 README.ja.md を追加し、README.md を現状に合わせて更新 |
 | `4ef0bbb` | ゲーム画面の最下行にボタンラベル（`ButtonBar`）。CoreS3 は起動時から `M5.setTouchButtonHeight(36)`。入力行とキーランプはラベルの上へ |
 | `c64b35e` | 入力行（解読した文字）を明るい青 `color565(100, 180, 255)` で表示 |
+| `c58559e` | 待機画面のハイスコアを Score / Lives と同じ Font0 サイズ 2 に |
 
 CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
@@ -127,7 +128,7 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
 `7e20c88`・`84a87a9` も 2026-11-06 にユーザーが確認済み（スプラッシュ画面、電池表示）。
 
-`05b6d80` も 2026-11-06 にユーザーが確認済み（▼ ボタン、クリック音）。`4ef0bbb` のボタン（SETTINGS, START, PAUSE, RESUME, QUIT）もユーザーが確認済み。`c64b35e` は CoreS3 に書き込み済み、実機未確認。Core2 には `4ef0bbb` 以降を書き込めていない（いつもの `<port>` がなく、`<port>` が見えていた。何の機器かユーザーに確認中）。
+`05b6d80` も 2026-11-06 にユーザーが確認済み（▼ ボタン、クリック音）。`4ef0bbb` のボタン（SETTINGS, START, PAUSE, RESUME, QUIT）もユーザーが確認済み。`c64b35e`・`c58559e` は両実機に書き込み済み、実機未確認。
 
 追従不良の調査（2026-11-06）: `DEBUG_MARKS` 版（打鍵ごとの長さ・間隔・推定値をシリアルに出す。コミットしていない）で CoreS3 のログを取った。ユーザーが速く打つと、短点は 14〜60ms と極端に短く（弾くような打ち方）、長点 210〜340ms、文字内の間隔 40〜90ms。旧方式は長点を短点の 4 倍に制限し、文字間を短点 2 個分（60〜100ms）にしていたため文字が割れていた。ログを `decoder_host` で再生すると旧方式で実機と同じ誤り（ETTT など）が再現し、新方式ではほぼすべて J になった。残る誤りは長点中の 16ms の隙間（バタつき）と、デバウンス 10ms より短いと思われる短点の欠落
 - ログからの再生: ログの gap/mark 行から押下・解放の時刻列を組み立てて `decoder_host` に流す（スクリプトは未コミット。必要なら `tools/` に入れる）
