@@ -19,6 +19,39 @@ void Game::start() {
     state_ = State::Playing;
 }
 
+void Game::pause(uint32_t now) {
+    if (state_ != State::Playing) {
+        return;
+    }
+    state_ = State::Paused;
+    pauseTime_ = now;
+    changes_ |= MESSAGE;
+}
+
+void Game::resume(uint32_t now) {
+    if (state_ != State::Paused) {
+        return;
+    }
+    // move the start of the challenge on by the time spent paused
+    uint32_t paused = now - pauseTime_;
+    startTime_ += paused;
+    lastTimeBarUpdate_ += paused;
+    // forget what was keyed while paused
+    inputWord_ = "";
+    wordCompleted_ = false;
+    state_ = State::Playing;
+    changes_ |= MESSAGE | TIME_BAR;
+}
+
+void Game::quit() {
+    if (state_ != State::Paused) {
+        return;
+    }
+    ended_ = true;
+    state_ = State::Idle;
+    changes_ |= SCORE | MESSAGE;
+}
+
 void Game::setRules(const GameRules &rules) {
     rules_ = rules;
     if (state_ == State::Idle) {

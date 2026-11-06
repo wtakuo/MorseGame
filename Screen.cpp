@@ -104,42 +104,55 @@ void Screen::drawScore(const Game &game) {
     M5.Display.printf("Lives %d", game.lives());
 }
 
+// Text sizes are set explicitly: M5GFX keeps the last size across fonts,
+// and the old code drew these at size 2, left over from the score.
 void Screen::drawMessage(const Game &game, const Settings &settings) {
+    auto centred = [this](const char *text, int y) {
+        M5.Display.setCursor((w_ - M5.Display.textWidth(text)) / 2, y);
+        M5.Display.print(text);
+    };
     if (game.state() == Game::State::Idle) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, BLACK);
         M5.Display.setTextColor(GREEN, BLACK);
         M5.Display.setFont(&fonts::Font2);
-        M5.Display.setTextSize(1);
+        M5.Display.setTextSize(2);
+        int hh = M5.Display.fontHeight(M5.Display.getFont());
+        int y = messageY_ + 4;
+        centred("CENTER: START", y);
+        centred("LEFT: SETTINGS", y + hh);
         char highScore[32];
         snprintf(highScore, sizeof(highScore), "HIGH SCORE  %04d",
                  Storage::highScore(settings.difficulty));
-        const char *lines[] = {"CENTER BUTTON: START", "LEFT BUTTON: SETTINGS", highScore};
+        M5.Display.setTextSize(1);
+        M5.Display.setTextColor(WHITE, BLACK);
+        centred(highScore, y + 2 * hh + 8);
+    }
+    else if (game.state() == Game::State::Paused) {
+        M5.Display.fillRect(0, messageY_, w_, messageH_, DARKGREY);
+        M5.Display.setTextColor(WHITE, DARKGREY);
+        M5.Display.setFont(&fonts::Font4);
+        M5.Display.setTextSize(2);
         int hh = M5.Display.fontHeight(M5.Display.getFont());
-        int y = messageY_ + (messageH_ - 3 * (hh + 6)) / 2;
-        for (const char *line : lines) {
-            M5.Display.setCursor((w_ - M5.Display.textWidth(line)) / 2, y);
-            M5.Display.print(line);
-            y += hh + 6;
-        }
+        centred("PAUSED", messageY_ + 8);
+        M5.Display.setFont(&fonts::Font2);
+        M5.Display.setTextSize(1);
+        centred("CENTER: RESUME    LEFT: QUIT", messageY_ + 8 + hh + 10);
     }
     else if (game.state() == Game::State::GameOver) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, RED);
         M5.Display.setTextColor(WHITE, RED);
         M5.Display.setFont(&fonts::Font4);
-        const char *gameOverText = "GAME OVER";
-        int ww = M5.Display.textWidth(gameOverText);
+        M5.Display.setTextSize(2);
         int hh = M5.Display.fontHeight(M5.Display.getFont());
-        M5.Display.setCursor((w_ - ww) / 2, (h_ - hh) / 2);
-        M5.Display.print(gameOverText);
+        centred("GAME OVER", (h_ - hh) / 2);
     }
     else {
         M5.Display.fillRect(0, messageY_, w_, messageH_, BLACK);
         M5.Display.setTextColor(YELLOW, BLACK);
         M5.Display.setFont(&fonts::Font4);
-        int ww = M5.Display.textWidth(game.challenge());
+        M5.Display.setTextSize(2);
         int hh = M5.Display.fontHeight(M5.Display.getFont());
-        M5.Display.setCursor((w_ - ww) / 2, (h_ - hh) / 2);
-        M5.Display.print(game.challenge());
+        centred(game.challenge().c_str(), (h_ - hh) / 2);
     }
     if (game.state() != Game::State::Playing) {
         M5.Display.drawFastHLine(0, timeBarY_, w_, BLACK);

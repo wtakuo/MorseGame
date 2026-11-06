@@ -15,7 +15,7 @@ struct GameRules {
 
 class Game {
 public:
-    enum class State { Idle, Playing, GameOver };
+    enum class State { Idle, Playing, Paused, GameOver };
 
     // What changed since the last takeChanges(), for the screen.
     enum Change : uint8_t {
@@ -31,6 +31,11 @@ public:
 
     // Start a new game from the idle screen.
     void start();
+    // Pause and resume a game in play; the time limit stops meanwhile.
+    void pause(uint32_t now);
+    void resume(uint32_t now);
+    // End a paused game (the score still counts for the high score).
+    void quit();
 
     // Input from the decoder.
     void addCharacter(const char *text) { inputWord_ += text; }
@@ -74,4 +79,5 @@ private:
     long remainingTime_ = 0;
     uint32_t lastTimeBarUpdate_ = 0;
     uint32_t gameOverTime_ = 0;
+    uint32_t pauseTime_ = 0;
 };

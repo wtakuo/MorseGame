@@ -155,10 +155,26 @@ void loop() {
         }
         return;
     }
+    // centre: start / pause / resume; left: settings (idle) or quit (paused)
     if (M5.BtnB.wasPressed()) {
-        game.start();
+        switch (game.state()) {
+        case Game::State::Idle:
+            game.start();
+            break;
+        case Game::State::Playing:
+            game.pause(t);
+            break;
+        case Game::State::Paused:
+            game.resume(t);
+            break;
+        default:
+            break;
+        }
     }
-    if (M5.BtnA.wasPressed() && game.state() == Game::State::Idle) {
+    if (M5.BtnA.wasPressed() && game.state() == Game::State::Paused) {
+        game.quit();
+    }
+    else if (M5.BtnA.wasPressed() && game.state() == Game::State::Idle) {
         Sound::sidetoneOff();
         menu.open(settings);
         inMenu = true;
