@@ -41,6 +41,7 @@ void applySettings() {
     Sound::setVolume(settings.speakerVolume());
     game.setRules(rulesFor(settings.difficulty));
     speed.reset(settings.dotMs());
+    screen.setWpm(settings.wpm);
     keyer.configure(settings.keyMode == KeyMode::IambicB ? IambicKeyer::Mode::B
                                                          : IambicKeyer::Mode::A,
                     settings.dotMs());
@@ -91,6 +92,11 @@ void iter(uint32_t now) {
         if (const char *text = decoder.checkCharacterEnd(gap, charGap)) {
             game.addCharacter(text);
             screen.appendInput(text);
+            if (settings.keyMode == KeyMode::Straight) {
+                // updated per character rather than per mark, so that the
+                // redraw does not land between marks
+                screen.setWpm(lround(1200 / speed.dotLength()));
+            }
         }
         if (decoder.checkWordEnd(gap, wordGap)) {
             game.endWord();

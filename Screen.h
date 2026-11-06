@@ -15,6 +15,9 @@ public:
     void redrawAll();
 
     void setKeyLamp(bool on);
+    // Speed shown under the title: the tracked speed for a straight key,
+    // the set speed for the keyer.
+    void setWpm(int wpm);
     // Append decoded text (a character or " " at the end of a word).
     void appendInput(const char *text);
 
@@ -22,7 +25,8 @@ public:
     void update(Game &game, const Settings &settings);
 
 private:
-    void drawTitle(const Settings &settings);
+    void drawTitle();
+    void drawStatus(const Settings &settings);
     void drawScore(const Game &game);
     void drawMessage(const Game &game, const Settings &settings);
     void drawTimeBar(const Game &game);
@@ -44,6 +48,8 @@ private:
     String inputText_;
     bool keyOn_ = false;
     bool redrawAll_ = true;
+    int wpm_ = 0;
+    bool statusChanged_ = true;
     bool keyLampChanged_ = true;
     bool inputTextChanged_ = true;
 };

@@ -28,17 +28,30 @@ void Screen::redrawAll() {
     redrawAll_ = true;
 }
 
-void Screen::drawTitle(const Settings &settings) {
+void Screen::setWpm(int wpm) {
+    if (wpm != wpm_) {
+        wpm_ = wpm;
+        statusChanged_ = true;
+    }
+}
+
+void Screen::drawTitle() {
     M5.Display.setFont(&fonts::Font2);
     M5.Display.setTextColor(CYAN, BLACK);
     M5.Display.setTextSize(2);
     M5.Display.setCursor(0, 0);
     M5.Display.print("Morse Game");
-    // the current settings, under the title
+}
+
+// The current settings, under the title.
+void Screen::drawStatus(const Settings &settings) {
+    M5.Display.setFont(&fonts::Font2);
     M5.Display.setTextSize(1);
+    int y = scoreH_ + 2;
+    M5.Display.fillRect(0, y, w_, M5.Display.fontHeight(M5.Display.getFont()), BLACK);
     M5.Display.setTextColor(LIGHTGREY, BLACK);
-    M5.Display.setCursor(0, scoreH_ + 2);
-    M5.Display.printf("%s  %d WPM  %s", keyModeName(settings.keyMode), settings.wpm,
+    M5.Display.setCursor(0, y);
+    M5.Display.printf("%s  %d WPM  LEVEL %s", keyModeName(settings.keyMode), wpm_,
                       difficultyName(settings.difficulty));
 }
 
@@ -59,16 +72,20 @@ void Screen::update(Game &game, const Settings &settings) {
     uint8_t changes = game.takeChanges();
     if (redrawAll_) {
         changes = Game::SCORE | Game::MESSAGE | Game::TIME_BAR;
-        keyLampChanged_ = inputTextChanged_ = true;
+        keyLampChanged_ = inputTextChanged_ = statusChanged_ = true;
     }
-    if (!changes && !keyLampChanged_ && !inputTextChanged_) {
+    if (!changes && !keyLampChanged_ && !inputTextChanged_ && !statusChanged_) {
         return;
     }
     M5.Display.startWrite();
     if (redrawAll_) {
         M5.Display.fillScreen(BLACK);
-        drawTitle(settings);
+        drawTitle();
         redrawAll_ = false;
+    }
+    if (statusChanged_) {
+        drawStatus(settings);
+        statusChanged_ = false;
     }
     M5.Display.fillCircle(keylampX_, keylampY_, KEYLAMP_SIZE, keyOn_ ? GREEN : BLACK);
     keyLampChanged_ = false;
