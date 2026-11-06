@@ -78,6 +78,48 @@ private:
     int wordGap_ = 0;
 };
 
+// Iambic keyer for a paddle. Generates dits and dahs at a fixed speed
+// while a paddle is held; squeezing both paddles alternates them.
+//
+// Opposite-paddle presses during an element (and the space after it) are
+// latched. In mode B the latch is used, so releasing a squeeze sends one
+// more element of the other kind; in mode A only the paddles still held at
+// the end of the space count, so a squeeze stops with the current element.
+class IambicKeyer {
+public:
+    enum class Mode { A, B };
+
+    void configure(Mode mode, uint32_t unitMs);
+
+    // Feed the (debounced) paddle states. Returns true when the keying
+    // output (sidetone) turns on or off.
+    bool update(uint32_t now, bool dit, bool dah);
+
+    bool isDown() const { return state_ == State::Mark; }
+    // When the output last turned on or off (the exact element boundary,
+    // not the sampling time).
+    uint32_t lastChangeTime() const { return lastChange_; }
+    // Kind of the element that just ended (valid after the output turns off).
+    bool lastElementDash() const { return dash_; }
+
+    int charGap() const { return 2 * unit_; }
+    int wordGap() const { return 6 * unit_; }
+
+private:
+    enum class State { Idle, Mark, Space };
+
+    void startElement(uint32_t t, bool dash);
+
+    Mode mode_ = Mode::A;
+    uint32_t unit_ = 80;
+    State state_ = State::Idle;
+    bool dash_ = false;
+    bool ditMemory_ = false;
+    bool dahMemory_ = false;
+    uint32_t until_ = 0;       // end of the current mark or space
+    uint32_t lastChange_ = 0;
+};
+
 // Collects dots and dashes into characters and characters into words.
 class CharacterDecoder {
 public:

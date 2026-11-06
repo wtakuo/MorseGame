@@ -101,6 +101,74 @@ bool SpeedTracker::classify(uint32_t length) {
     return isDash;
 }
 
+// ---------------------------------------------------------------- IambicKeyer
+
+void IambicKeyer::configure(Mode mode, uint32_t unitMs) {
+    mode_ = mode;
+    unit_ = unitMs;
+}
+
+void IambicKeyer::startElement(uint32_t t, bool dash) {
+    dash_ = dash;
+    if (dash) {
+        dahMemory_ = false;
+    }
+    else {
+        ditMemory_ = false;
+    }
+    state_ = State::Mark;
+    until_ = t + (dash ? 3 : 1) * unit_;
+    lastChange_ = t;
+}
+
+bool IambicKeyer::update(uint32_t now, bool dit, bool dah) {
+    if (state_ != State::Idle) {
+        // latch the opposite paddle
+        if (dash_ && dit) {
+            ditMemory_ = true;
+        }
+        if (!dash_ && dah) {
+            dahMemory_ = true;
+        }
+    }
+    switch (state_) {
+    case State::Idle:
+        if (dit || dah) {
+            ditMemory_ = dahMemory_ = false;
+            startElement(now, !dit);  // a dit first if both are pressed
+            return true;
+        }
+        return false;
+    case State::Mark:
+        if (now < until_) {
+            return false;
+        }
+        state_ = State::Space;
+        lastChange_ = until_;
+        until_ += unit_;
+        return true;
+    case State::Space: {
+        if (now < until_) {
+            return false;
+        }
+        bool latched = mode_ == Mode::B && (dash_ ? ditMemory_ : dahMemory_);
+        bool opposite = (dash_ ? dit : dah) || latched;
+        bool same = dash_ ? dah : dit;
+        if (opposite) {
+            startElement(until_, !dash_);
+            return true;
+        }
+        if (same) {
+            startElement(until_, dash_);
+            return true;
+        }
+        state_ = State::Idle;
+        return false;
+    }
+    }
+    return false;
+}
+
 // ----------------------------------------------------------- CharacterDecoder
 
 void CharacterDecoder::addMark(bool dash) {
