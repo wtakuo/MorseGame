@@ -6,14 +6,14 @@
 
 namespace {
 
-const int TOP = 40;          // first item
-const int ROW = 22;          // item spacing
+const int TOP = 36;          // first item
+const int ROW = 20;          // item spacing
 const int LABEL_X = 24;
 const int VALUE_X = 150;
 const int BUTTON_H = 36;     // labels (and, on a CoreS3, the touch area) at the bottom
 
 const char *const ITEM_NAMES[] = {"KEY", "SPEED", "DIT / DAH", "LEVEL", "VOLUME",
-                                  "RESET", "EXIT"};
+                                  "RESET", "CLEAR SCORES", "EXIT"};
 
 bool isCoreS3() {
     auto b = M5.getBoard();
@@ -30,7 +30,7 @@ E cycle(E value, int count, int step) {
 void SettingsMenu::open(const Settings &settings) {
     settings_ = settings;
     cursor_ = KEY;
-    resetDone_ = false;
+    armed_ = done_ = -1;
     redrawAll_ = true;
     if (isCoreS3()) {
         // let the button labels at the bottom of the screen act as BtnA-C
@@ -46,6 +46,7 @@ bool SettingsMenu::press(Button button) {
     if (button == Button::Next) {
         int old = cursor_;
         cursor_ = (cursor_ + 1) % ITEM_COUNT;
+        armed_ = done_ = -1;   // moving away cancels a confirmation
         itemChanged_[old] = itemChanged_[cursor_] = true;
         return false;
     }
@@ -81,11 +82,22 @@ void SettingsMenu::change(int step) {
         Sound::correct();  // let the player hear the new volume
         break;
     case RESET:
-        s = Settings();
-        Sound::setVolume(s.speakerVolume());
-        resetDone_ = true;
-        redrawAll_ = true;
-        return;
+    case CLEAR_SCORES:
+        if (armed_ != cursor_) {
+            armed_ = cursor_;   // ask for a second press
+            done_ = -1;
+            break;
+        }
+        armed_ = -1;
+        done_ = cursor_;
+        if (cursor_ == RESET) {
+            s = Settings();
+            Sound::setVolume(s.speakerVolume());
+            redrawAll_ = true;
+            return;
+        }
+        Storage::clearHighScores();
+        break;
     default:
         return;
     }
@@ -148,25 +160,43 @@ void SettingsMenu::drawItem(int item) {
         M5.Display.printf("%d", s.volume);
         break;
     case RESET:
-        M5.Display.print(resetDone_ ? "DONE" : "- / + : DEFAULTS");
+    case CLEAR_SCORES:
+        if (armed_ == item) {
+            M5.Display.setTextColor(RED, bg);
+            M5.Display.print("PRESS AGAIN");
+        }
+        else if (done_ == item) {
+            M5.Display.print("DONE");
+        }
+        else {
+            M5.Display.print(item == RESET ? "TO DEFAULTS" : "ALL LEVELS");
+        }
         break;
     case EXIT:
-        M5.Display.print("- / + : SAVE AND EXIT");
+        M5.Display.print("SAVE");
         break;
     }
 }
 
 void SettingsMenu::drawButtons() {
     int w = M5.Display.width(), h = M5.Display.height();
-    const char *labels[] = {"NEXT", "-", "+"};
     M5.Display.setFont(&fonts::Font2);
     M5.Display.setTextSize(1);
     M5.Display.setTextColor(WHITE, BLACK);
+    int cy = h - BUTTON_H / 2 + 1;   // centre line of the buttons
     for (int i = 0; i < 3; i++) {
-        int x = w * i / 3 + 6, bw = w / 3 - 12;
+        int x = w * i / 3 + 6, bw = w / 3 - 12, cx = x + bw / 2;
         M5.Display.drawRoundRect(x, h - BUTTON_H + 4, bw, BUTTON_H - 6, 6, DARKGREY);
-        int tw = M5.Display.textWidth(labels[i]);
-        M5.Display.setCursor(x + (bw - tw) / 2, h - BUTTON_H / 2 - 7);
-        M5.Display.print(labels[i]);
+        if (i == 0) {
+            const char *label = "NEXT";
+            M5.Display.setCursor(cx - M5.Display.textWidth(label) / 2, cy - 8);
+            M5.Display.print(label);
+        }
+        else if (i == 1) {   // left-pointing triangle
+            M5.Display.fillTriangle(cx - 8, cy, cx + 6, cy - 8, cx + 6, cy + 8, WHITE);
+        }
+        else {               // right-pointing triangle
+            M5.Display.fillTriangle(cx + 8, cy, cx - 6, cy - 8, cx - 6, cy + 8, WHITE);
+        }
     }
 }

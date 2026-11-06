@@ -115,4 +115,12 @@ void setHighScore(Difficulty difficulty, int score) {
     prefs.putInt(highScoreKey(difficulty), score);
 }
 
+void clearHighScores() {
+    for (int i = 0; i < DIFFICULTY_COUNT; i++) {
+        if (highScores[i] != 0) {
+            setHighScore((Difficulty)i, 0);
+        }
+    }
+}
+
 }  // namespace Storage

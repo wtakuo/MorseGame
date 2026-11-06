@@ -1,5 +1,6 @@
 // Settings screen, operated with the three buttons:
-//   left = next item, centre = previous value (-), right = next value (+).
+//   left = next item, centre = previous value (<), right = next value (>).
+// RESET and CLEAR SCORES ask for a second press to confirm.
 // On a CoreS3 the buttons are the bottom of the touch screen, where their
 // labels are drawn.
 #pragma once
@@ -24,7 +25,7 @@ public:
     void update();
 
 private:
-    enum Item { KEY, SPEED, PADDLE, DIFFICULTY, VOLUME, RESET, EXIT, ITEM_COUNT };
+    enum Item { KEY, SPEED, PADDLE, DIFFICULTY, VOLUME, RESET, CLEAR_SCORES, EXIT, ITEM_COUNT };
 
     void change(int step);
     void drawItem(int item);
@@ -34,5 +35,6 @@ private:
     int cursor_ = KEY;
     bool redrawAll_ = true;
     bool itemChanged_[ITEM_COUNT] = {};
-    bool resetDone_ = false;
+    int armed_ = -1;   // RESET or CLEAR_SCORES waiting for the second press
+    int done_ = -1;    // RESET or CLEAR_SCORES just carried out
 };

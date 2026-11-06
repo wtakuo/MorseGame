@@ -41,5 +41,6 @@ void loadSettings(Settings &settings);   // invalid or missing values stay as th
 void saveSettings(const Settings &settings);
 int highScore(Difficulty difficulty);
 void setHighScore(Difficulty difficulty, int score);
+void clearHighScores();
 
 }  // namespace Storage
