@@ -58,8 +58,8 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>   # Core
 
 - 修正は 1 件ずつ小さくコミットする（末尾に `Co-Authored-By` 行）
 - 打鍵タイミングに関わる変更は、実機を触る前に [tools/morse_sim.py](tools/morse_sim.py)（`python3 tools/morse_sim.py`）で比較してから入れる。過去にデバウンス修正で認識率を大きく落としたことがある
-  - 人の打鍵（速度、長点/短点比、ばらつき、文字の最後の符号を長めに押す癖、チャタリング）を生成し、4ms 周期・10ms デバウンスで `iter()` と同じように解読する。解読方式はクラス（`Current` = `c83c557` より前、`WindowMeans` = `c83c557`〜`0645018`、`UnitGaps` = 現在の `SpeedTracker`）。打ち方のプロファイルに、ログのユーザーをまねた `flick`（短点が 0.45 単位、間隔 0.8 単位）があるで差し替える
-  - ファームウェアの定数を変えたらシミュレータ側も合わせる。`python3 tools/morse_sim.py --check-host` で、ファームウェアの `MorseDecoder.cpp` を PC でビルドし、`WindowMeans` と同じ解読結果になるか確認できる（800 例中 799 例一致。残る 1 例は float/double の丸め差）
+  - 人の打鍵（速度、長点/短点比、ばらつき、文字の最後の符号を長めに押す癖、チャタリング）を生成し、4ms 周期・10ms デバウンスで `iter()` と同じように解読する。解読方式はクラス（`Current` = `c83c557` より前、`WindowMeans` = `c83c557`〜`0645018`、`UnitGaps` = 現在の `SpeedTracker`）で差し替える。打ち方のプロファイルに、ログのユーザーをまねた `flick`（短点が 0.45 単位、間隔 0.8 単位）がある
+  - ファームウェアの定数を変えたらシミュレータ側も合わせる。`python3 tools/morse_sim.py --check-host` で、ファームウェアの `MorseDecoder.cpp` を PC でビルドし、`UnitGaps` と同じ解読結果になるか確認できる（1000 例中 999 例一致。残る 1 例は float/double の丸め差）
   - 符号表はシミュレータも `MorseCode.cpp` から読み込む
   - 単語はお題ごとに「語間＋1.5 秒」空けて打つ想定。採点は単語列を対応付けて行う（位置で比べると分割・結合で以降がすべてずれる）
 
