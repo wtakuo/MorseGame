@@ -1,5 +1,6 @@
 // Morse Game for M5Stack
 //
+//   Version.h        version and author
 //   Config.h         pins and loop timing
 //   MorseCode.*      Morse code table
 //   MorseDecoder.*   straight key debounce and speed tracking, iambic
@@ -148,6 +149,7 @@ void setup() {
     M5.begin(cfg);
     pinMode(KEY_PIN, INPUT_PULLUP);
     pinMode(KEY_PIN2, INPUT_PULLUP);
+    Screen::splash();
     Storage::begin();
     Storage::loadSettings(settings);
     applySettings();

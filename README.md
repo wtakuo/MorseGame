@@ -1,5 +1,7 @@
 # MORSE GAME for M5Stack
 
+Version 0.1.0
+
 This game is designed to help you improve your Morse code transmission skills.
 It has been tested on the M5Stack Core2 and the M5Stack CoreS3-SE.
 

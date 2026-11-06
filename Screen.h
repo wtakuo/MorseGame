@@ -9,6 +9,9 @@
 
 class Screen {
 public:
+    // Show the title, version and author for a while (at power-on and reset).
+    static void splash();
+
     // Compute the layout from the display size and draw the screen.
     void begin();
     // Clear the screen and draw everything again (after the settings menu).

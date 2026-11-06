@@ -2,6 +2,33 @@
 
 #include <M5Unified.h>
 
+#include "Version.h"
+
+void Screen::splash() {
+    const uint32_t SPLASH_MS = 3000;
+    int w = M5.Display.width(), h = M5.Display.height();
+    M5.Display.fillScreen(BLACK);
+    auto centred = [w](const char *text, int y) {
+        M5.Display.setCursor((w - M5.Display.textWidth(text)) / 2, y);
+        M5.Display.print(text);
+    };
+    M5.Display.setFont(&fonts::Font4);
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(CYAN, BLACK);
+    int titleH = M5.Display.fontHeight(M5.Display.getFont());
+    int y = h / 2 - titleH;
+    centred("Morse Game", y);
+    y += titleH + 8;
+    M5.Display.setFont(&fonts::Font2);
+    M5.Display.setTextSize(1);
+    M5.Display.setTextColor(WHITE, BLACK);
+    centred("Version " MORSE_GAME_VERSION, y);
+    y += M5.Display.fontHeight(M5.Display.getFont()) + 16;
+    M5.Display.setTextColor(LIGHTGREY, BLACK);
+    centred(MORSE_GAME_AUTHOR, y);
+    delay(SPLASH_MS);
+}
+
 void Screen::begin() {
     w_ = M5.Display.width();
     h_ = M5.Display.height();
