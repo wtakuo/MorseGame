@@ -2,6 +2,7 @@
 
 #include <M5Unified.h>
 
+#include "ButtonBar.h"
 #include "Version.h"
 
 void Screen::splash() {
@@ -33,12 +34,14 @@ void Screen::begin() {
     w_ = M5.Display.width();
     h_ = M5.Display.height();
 
-    keylampX_ = KEYLAMP_SIZE + 1;
-    keylampY_ = h_ - KEYLAMP_SIZE - 2;
+    // the input line sits just above the button labels
     M5.Display.setFont(&fonts::Font0);
     M5.Display.setTextSize(INPUT_TEXT_SCALE);
+    int inputH = M5.Display.fontHeight(M5.Display.getFont());
     inputTextX_ = KEYLAMP_SIZE * 2 + 7;
-    inputTextY_ = h_ - M5.Display.fontHeight(M5.Display.getFont());
+    inputTextY_ = h_ - ButtonBar::HEIGHT - inputH - 2;
+    keylampX_ = KEYLAMP_SIZE + 1;
+    keylampY_ = inputTextY_ + inputH / 2 - 1;
     maxInputText_ = (w_ - inputTextX_) / M5.Display.textWidth("W");
 
     M5.Display.setTextSize(2);
@@ -108,6 +111,7 @@ void Screen::update(Game &game, const Settings &settings) {
     if (redrawAll_) {
         M5.Display.fillScreen(BLACK);
         drawTitle();
+        shownButtons_ = -1;
         redrawAll_ = false;
     }
     if (statusChanged_) {
@@ -130,6 +134,7 @@ void Screen::update(Game &game, const Settings &settings) {
     }
     if (changes & Game::MESSAGE) {
         drawMessage(game, settings);
+        drawButtons(game);
     }
     if ((changes & Game::TIME_BAR) && game.state() == Game::State::Playing) {
         drawTimeBar(game);
@@ -161,15 +166,13 @@ void Screen::drawMessage(const Game &game, const Settings &settings) {
         M5.Display.setFont(&fonts::Font2);
         M5.Display.setTextSize(2);
         int hh = M5.Display.fontHeight(M5.Display.getFont());
-        int y = messageY_ + 4;
-        centred("CENTER: START", y);
-        centred("LEFT: SETTINGS", y + hh);
+        int y = messageY_ + 16;
+        centred("PRESS START", y);
         char highScore[32];
         snprintf(highScore, sizeof(highScore), "HIGH SCORE  %04d",
                  Storage::highScore(settings.difficulty));
-        M5.Display.setTextSize(1);
         M5.Display.setTextColor(WHITE, BLACK);
-        centred(highScore, y + 2 * hh + 8);
+        centred(highScore, y + hh + 8);
     }
     else if (game.state() == Game::State::Paused) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, DARKGREY);
@@ -177,10 +180,7 @@ void Screen::drawMessage(const Game &game, const Settings &settings) {
         M5.Display.setFont(&fonts::Font4);
         M5.Display.setTextSize(2);
         int hh = M5.Display.fontHeight(M5.Display.getFont());
-        centred("PAUSED", messageY_ + 8);
-        M5.Display.setFont(&fonts::Font2);
-        M5.Display.setTextSize(1);
-        centred("CENTER: RESUME    LEFT: QUIT", messageY_ + 8 + hh + 10);
+        centred("PAUSED", messageY_ + (messageH_ - hh) / 2);
     }
     else if (game.state() == Game::State::GameOver) {
         M5.Display.fillRect(0, messageY_, w_, messageH_, RED);
@@ -200,6 +200,29 @@ void Screen::drawMessage(const Game &game, const Settings &settings) {
     }
     if (game.state() != Game::State::Playing) {
         M5.Display.drawFastHLine(0, timeBarY_, w_, BLACK);
+    }
+}
+
+// What the buttons do in each state.
+void Screen::drawButtons(const Game &game) {
+    int state = (int)game.state();
+    if (state == shownButtons_) {
+        return;
+    }
+    shownButtons_ = state;
+    switch (game.state()) {
+    case Game::State::Idle:
+        ButtonBar::draw("SETTINGS", "START", nullptr);
+        break;
+    case Game::State::Playing:
+        ButtonBar::draw(nullptr, "PAUSE", nullptr);
+        break;
+    case Game::State::Paused:
+        ButtonBar::draw("QUIT", "RESUME", nullptr);
+        break;
+    default:
+        ButtonBar::draw(nullptr, nullptr, nullptr);
+        break;
     }
 }
 

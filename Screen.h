@@ -33,6 +33,7 @@ private:
     void drawScore(const Game &game);
     void drawMessage(const Game &game, const Settings &settings);
     void drawTimeBar(const Game &game);
+    void drawButtons(const Game &game);
 
     // Layout, set by begin() from the display size. The fonts have a fixed
     // pixel size, so the areas are placed relative to the screen edges and
@@ -47,6 +48,7 @@ private:
     int scoreX_ = 0, scoreH_ = 0;   // score and lives, top right
     int messageY_ = 0, messageH_ = 0;  // challenge / idle / game over, around the centre
     int timeBarY_ = 0;              // remaining time, just below the message area
+    int shownButtons_ = -1;         // game state whose button labels are drawn
 
     String inputText_;
     bool keyOn_ = false;

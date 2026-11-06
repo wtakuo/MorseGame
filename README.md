@@ -22,7 +22,7 @@ The contacts close to GND (the pins use internal pull-ups). The DIT and DAH padd
 
 ## Controls
 
-The three buttons below the screen (on the CoreS3, the bottom edge of the touch screen):
+Three buttons, labelled along the bottom of the screen. On the Core2 they are the touch buttons below the screen; on the CoreS3 the labels themselves are touch buttons.
 
 | Screen | Left | Centre | Right |
 |---|---|---|---|

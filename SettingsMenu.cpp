@@ -2,6 +2,7 @@
 
 #include <M5Unified.h>
 
+#include "ButtonBar.h"
 #include "Sound.h"
 
 namespace {
@@ -10,15 +11,9 @@ const int TOP = 36;          // first item
 const int ROW = 20;          // item spacing
 const int LABEL_X = 24;
 const int VALUE_X = 150;
-const int BUTTON_H = 36;     // labels (and, on a CoreS3, the touch area) at the bottom
 
 const char *const ITEM_NAMES[] = {"KEY", "SPEED", "DIT / DAH", "LEVEL", "VOLUME",
                                   "RESET", "CLEAR SCORES", "EXIT"};
-
-bool isCoreS3() {
-    auto b = M5.getBoard();
-    return b == m5::board_t::board_M5StackCoreS3 || b == m5::board_t::board_M5StackCoreS3SE;
-}
 
 template <typename E>
 E cycle(E value, int count, int step) {
@@ -34,10 +29,6 @@ void SettingsMenu::open(const Settings &settings) {
     battery_ = -2;
     nextBatteryCheck_ = 0;
     redrawAll_ = true;
-    if (isCoreS3()) {
-        // let the button labels at the bottom of the screen act as BtnA-C
-        M5.setTouchButtonHeight(BUTTON_H);
-    }
 }
 
 bool SettingsMenu::repeats() const {
@@ -54,9 +45,6 @@ bool SettingsMenu::press(Button button) {
     }
     int step = button == Button::Plus ? 1 : -1;
     if (cursor_ == EXIT) {
-        if (isCoreS3()) {
-            M5.setTouchButtonHeight(0);
-        }
         return true;
     }
     change(step);
@@ -214,22 +202,5 @@ void SettingsMenu::drawBattery() {
 }
 
 void SettingsMenu::drawButtons() {
-    int w = M5.Display.width(), h = M5.Display.height();
-    M5.Display.setFont(&fonts::Font2);
-    M5.Display.setTextSize(1);
-    M5.Display.setTextColor(WHITE, BLACK);
-    int cy = h - BUTTON_H / 2 + 1;   // centre line of the buttons
-    for (int i = 0; i < 3; i++) {
-        int x = w * i / 3 + 6, bw = w / 3 - 12, cx = x + bw / 2;
-        M5.Display.drawRoundRect(x, h - BUTTON_H + 4, bw, BUTTON_H - 6, 6, DARKGREY);
-        if (i == 0) {        // down-pointing triangle: next item
-            M5.Display.fillTriangle(cx, cy + 7, cx - 8, cy - 7, cx + 8, cy - 7, WHITE);
-        }
-        else if (i == 1) {   // left-pointing triangle
-            M5.Display.fillTriangle(cx - 8, cy, cx + 6, cy - 8, cx + 6, cy + 8, WHITE);
-        }
-        else {               // right-pointing triangle
-            M5.Display.fillTriangle(cx + 8, cy, cx - 6, cy - 8, cx - 6, cy + 8, WHITE);
-        }
-    }
+    ButtonBar::draw(ButtonBar::DOWN, ButtonBar::LEFT, ButtonBar::RIGHT);
 }

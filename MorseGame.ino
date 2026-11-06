@@ -10,10 +10,12 @@
 //   Settings.*       settings, difficulty rules, NVS storage, high scores
 //   SettingsMenu.*   settings screen
 //   Screen.*         drawing of the game screen
+//   ButtonBar.*      labels of the three buttons (touch buttons on a CoreS3)
 //   Sound.*          sidetone and sound effects
 
 #include <M5Unified.h>
 
+#include "ButtonBar.h"
 #include "Config.h"
 #include "Game.h"
 #include "MorseDecoder.h"
@@ -156,6 +158,7 @@ void setup() {
     M5.begin(cfg);
     pinMode(KEY_PIN, INPUT_PULLUP);
     pinMode(KEY_PIN2, INPUT_PULLUP);
+    ButtonBar::begin();
     Screen::splash();
     Storage::begin();
     Storage::loadSettings(settings);
