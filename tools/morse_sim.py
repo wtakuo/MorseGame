@@ -103,7 +103,7 @@ class Keyer:
 # ------------------------------------------------------------ strategies
 
 class Current:
-    """The decoder as of commit 160ca8f."""
+    """The decoder as of commit c7d7553."""
     name = 'current'
 
     def __init__(self, dot=60):
@@ -170,7 +170,7 @@ class TwoMeans:
 
 
 class WindowMeans(TwoMeans):
-    """The decoder of aaf1e06-2b18666: TwoMeans, plus a window of the last
+    """The decoder of c83c557-0645018: TwoMeans, plus a window of the last
     `window` marks.
 
     When the window holds both short and long marks (longest/shortest >=
