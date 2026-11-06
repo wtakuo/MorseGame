@@ -30,6 +30,7 @@ private:
     void change(int step);
     void drawItem(int item);
     void drawButtons();
+    void drawBattery();
 
     Settings settings_;
     int cursor_ = KEY;
@@ -37,4 +38,7 @@ private:
     bool itemChanged_[ITEM_COUNT] = {};
     int armed_ = -1;   // RESET or CLEAR_SCORES waiting for the second press
     int done_ = -1;    // RESET or CLEAR_SCORES just carried out
+    uint32_t nextBatteryCheck_ = 0;
+    int battery_ = -2;          // last level drawn (%), -1 if unknown
+    bool charging_ = false;
 };

@@ -31,6 +31,8 @@ void SettingsMenu::open(const Settings &settings) {
     settings_ = settings;
     cursor_ = KEY;
     armed_ = done_ = -1;
+    battery_ = -2;
+    nextBatteryCheck_ = 0;
     redrawAll_ = true;
     if (isCoreS3()) {
         // let the button labels at the bottom of the screen act as BtnA-C
@@ -117,8 +119,10 @@ void SettingsMenu::update() {
             itemChanged_[i] = true;
         }
         drawButtons();
+        battery_ = -2;   // draw the battery level again
         redrawAll_ = false;
     }
+    drawBattery();
     for (int i = 0; i < ITEM_COUNT; i++) {
         if (itemChanged_[i]) {
             drawItem(i);
@@ -176,6 +180,37 @@ void SettingsMenu::drawItem(int item) {
         M5.Display.print("SAVE");
         break;
     }
+}
+
+// Battery level at the top right, "+" in front while charging. Checked
+// once a second and drawn only when it changes.
+void SettingsMenu::drawBattery() {
+    uint32_t now = millis();
+    if (battery_ != -2 && now < nextBatteryCheck_) {
+        return;
+    }
+    nextBatteryCheck_ = now + 1000;
+    int level = M5.Power.getBatteryLevel();
+    bool charging = M5.Power.isCharging() == m5::Power_Class::is_charging;
+    if (level == battery_ && charging == charging_) {
+        return;
+    }
+    battery_ = level;
+    charging_ = charging;
+    char text[8];
+    if (level < 0 || level > 100) {
+        snprintf(text, sizeof(text), "--%%");
+    }
+    else {
+        snprintf(text, sizeof(text), "%s%d%%", charging ? "+" : "", level);
+    }
+    M5.Display.setFont(&fonts::Font2);
+    M5.Display.setTextSize(1);
+    int w = M5.Display.width();
+    M5.Display.fillRect(w - 60, 12, 60, M5.Display.fontHeight(M5.Display.getFont()), BLACK);
+    M5.Display.setTextColor(charging ? GREEN : WHITE, BLACK);
+    M5.Display.setCursor(w - 8 - M5.Display.textWidth(text), 12);
+    M5.Display.print(text);
 }
 
 void SettingsMenu::drawButtons() {
