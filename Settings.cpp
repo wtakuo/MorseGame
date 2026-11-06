@@ -16,19 +16,19 @@ const char *keyModeName(KeyMode mode) {
 
 const char *difficultyName(Difficulty difficulty) {
     switch (difficulty) {
-    case Difficulty::Beginner:
-        return "BEGINNER";
-    case Difficulty::Advanced:
-        return "ADVANCED";
+    case Difficulty::Easy:
+        return "EASY";
+    case Difficulty::Hard:
+        return "HARD";
     default:
-        return "INTERMEDIATE";
+        return "NORMAL";
     }
 }
 
 GameRules rulesFor(Difficulty difficulty) {
-    GameRules r;  // the defaults are the intermediate rules
+    GameRules r;  // the defaults are the normal rules
     switch (difficulty) {
-    case Difficulty::Beginner: {
+    case Difficulty::Easy: {
         const uint32_t t[] = {8000, 12000, 16000, 20000, 24000};
         memcpy(r.timeoutMs, t, sizeof(t));
         r.successesPerLevel = 5;
@@ -36,7 +36,7 @@ GameRules rulesFor(Difficulty difficulty) {
         r.digitsInLevel1 = false;
         break;
     }
-    case Difficulty::Advanced: {
+    case Difficulty::Hard: {
         const uint32_t t[] = {3000, 5000, 7000, 9000, 11000};
         memcpy(r.timeoutMs, t, sizeof(t));
         r.successesPerLevel = 10;

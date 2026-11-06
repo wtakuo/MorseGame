@@ -8,7 +8,7 @@
 enum class KeyMode : uint8_t { Straight, IambicA, IambicB };
 const int KEY_MODE_COUNT = 3;
 
-enum class Difficulty : uint8_t { Beginner, Intermediate, Advanced };
+enum class Difficulty : uint8_t { Easy, Normal, Hard };
 const int DIFFICULTY_COUNT = 3;
 
 struct Settings {
@@ -19,8 +19,8 @@ struct Settings {
     KeyMode keyMode = KeyMode::Straight;
     int wpm = 15;               // keyer speed; initial speed for a straight key
     bool swapPaddles = false;   // false: pin 1 of the port = DIT, pin 2 = DAH
-    Difficulty difficulty = Difficulty::Intermediate;
-    int volume = 9;             // 0 - MAX_VOLUME
+    Difficulty difficulty = Difficulty::Normal;
+    int volume = 5;             // 0 - MAX_VOLUME
 
     // Length of a dot at the set speed (PARIS: 1200 / WPM ms).
     uint32_t dotMs() const { return 1200 / wpm; }

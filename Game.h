@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 // Parameters that differ between difficulties (see rulesFor() in Settings).
-// The defaults are the intermediate rules.
+// The defaults are the normal rules.
 struct GameRules {
     static const int MAX_LEVEL = 5;
     uint32_t timeoutMs[MAX_LEVEL] = {4000, 7000, 10000, 12000, 15000};

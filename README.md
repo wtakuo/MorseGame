@@ -27,7 +27,7 @@ The three buttons below the screen (on the CoreS3, the bottom edge of the touch 
 | Paused | Quit | Resume | |
 | Settings | Next item | - | + |
 
-Settings: key (STRAIGHT, IAMBIC-A, IAMBIC-B), speed (5-40 WPM; the keyer speed, or the starting speed for a straight key, which then follows the player), DIT/DAH order, difficulty (BEGINNER, INTERMEDIATE, ADVANCED), volume, and reset to defaults. The settings and a high score for each difficulty are kept in flash.
+Settings: key (STRAIGHT, IAMBIC-A, IAMBIC-B), speed (5-40 WPM; the keyer speed, or the starting speed for a straight key, which then follows the player), DIT/DAH order, level (EASY, NORMAL, HARD), volume, and reset to defaults. The settings and a high score for each level are kept in flash.
 
 This game was created by Takuo Watanabe for an exhibition at the Yokohama Midorigaoka High School Homecoming Day held on November 15, 2025.
 

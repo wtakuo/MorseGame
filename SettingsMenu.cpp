@@ -12,7 +12,7 @@ const int LABEL_X = 24;
 const int VALUE_X = 150;
 const int BUTTON_H = 36;     // labels (and, on a CoreS3, the touch area) at the bottom
 
-const char *const ITEM_NAMES[] = {"KEY", "SPEED", "DIT / DAH", "DIFFICULTY", "VOLUME",
+const char *const ITEM_NAMES[] = {"KEY", "SPEED", "DIT / DAH", "LEVEL", "VOLUME",
                                   "RESET", "EXIT"};
 
 bool isCoreS3() {
