@@ -121,8 +121,11 @@ void Screen::update(Game &game, const Settings &settings) {
     M5.Display.fillCircle(keylampX_, keylampY_, KEYLAMP_SIZE, keyOn_ ? GREEN : BLACK);
     keyLampChanged_ = false;
     if (inputTextChanged_) {
+        // light blue, to set the decoded text apart from the white labels
+        const uint16_t INPUT_TEXT_COLOR = M5.Display.color565(100, 180, 255);
         M5.Display.setFont(&fonts::Font0);
         M5.Display.setTextSize(INPUT_TEXT_SCALE);
+        M5.Display.setTextColor(INPUT_TEXT_COLOR, BLACK);
         M5.Display.setCursor(inputTextX_, inputTextY_);
         M5.Display.fillRect(inputTextX_, inputTextY_, w_ - inputTextX_,
                             M5.Display.fontHeight(M5.Display.getFont()), BLACK);
