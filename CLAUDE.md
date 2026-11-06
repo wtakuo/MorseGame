@@ -2,6 +2,7 @@
 
 M5Stack 用のモールス打鍵練習ゲーム。画面に出る文字・単語を GPIO に接続したモールスキーで打鍵する。制限時間内に正しく打てないとペナルティ 1（コード上は `lives--`）、5 回でゲームオーバー。2025-11-15 の横浜緑ヶ丘高校ホームカミングデー展示用に作成。
 
+- バージョンは [Version.h](Version.h) の `MORSE_GAME_VERSION`（現在 0.1.0、2026-11-06 に設定。git のタグはまだ付けない）。README の先頭にも書いてあるので一緒に更新する
 - コードはスケッチ直下のモジュールに分割（2026-11-06、`d34ef7e`）
   - [MorseGame.ino](MorseGame.ino): 各部品をつなぐだけ（`iter()` で 4ms ごとにキーを読み、解読してゲームを進める）
   - [Config.h](Config.h): キーピン、ループ周期
@@ -42,7 +43,7 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 - プロファイルでは 2.0.17 のボード ID はハイフン区切り（`m5stack-core2`, `m5stack-cores3`）。グローバルに入っている esp32 3.x はアンダースコア区切りで別物
 - エディタの clangd が出す `'M5Unified.h' file not found` 等は誤検出（ビルドは通る）
 - シリアルポート名は挿す USB ポートで変わる（CoreS3 は `<port>`、`<port>`、`<port>` など）。`arduino-cli board list` で確認する
-- CoreS3 への書き込みが `Changing baud rate to 921600` の後 `No serial data received` で失敗し続けることがある（2026-11-06、シリアルモニタを強制終了した後に発生し、電源の入れ直し・USB の挿し直しでも直らなかった）。esptool を直接 `--no-stub` で実行すると書ける（遅い）:
+- CoreS3 への書き込みが `Changing baud rate to 921600` の後 `No serial data received` で失敗し続けることがある（2026-11-06、シリアルモニタを強制終了した後に発生し、電源の入れ直し・USB の挿し直しでも直らなかった。`--no-stub` で一度書いた後は通常の upload に戻った）。esptool を直接 `--no-stub` で実行すると書ける（遅い）:
   `~/Library/Arduino15/internal/esp32_esptool_py_4.5.1_*/esptool --chip esp32s3 --port <port> --baud 921600 --before default_reset --after hard_reset --no-stub write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 build/cores3/MorseGame.ino.bootloader.bin 0x8000 build/cores3/MorseGame.ino.partitions.bin 0xe000 ~/Library/Arduino15/internal/esp32_esp32_2.0.17_*/tools/partitions/boot_app0.bin 0x10000 build/cores3/MorseGame.ino.bin`
 - CoreS3 は USB Serial/JTAG。シリアルポートを開くとチップがリセットされる。ポートを開いたままのプロセスがあると書き込みに失敗する（`lsof <port>` で確認）
 - 調査用のデバッグ出力は `#ifdef DEBUG_xxx` で囲み、`arduino-cli compile --profile <p> --build-property compiler.cpp.extra_flags=-DDEBUG_xxx` で有効化する（コミットはしない）。パニック時のバックトレースは `~/Library/Arduino15/packages/esp32/tools/` 以下のツールチェーンの `addr2line` で、`build/<profile>/MorseGame.ino.elf` に対して解決できる
@@ -92,6 +93,8 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 | `2a182e5` | 設定画面の ◀/▶ ボタン、RESET の確認（2 回押し）、CLEAR SCORES（全レベルのハイスコア消去、確認つき） |
 | `2b18666` | ストレートキーでは追従中の速度をタイトル下の WPM に表示（1 文字ごとに更新） |
 | `9cdced4` | ストレートキーの文字間・語間を、短点でなく「長点の 1/3 と文字内の符号間隔の平均の平均」を単位に決める。長点/短点比の上限 4 → 8 |
+| `7e20c88` | バージョン 0.1.0（`Version.h`）、起動時・リセット時に 3 秒のスプラッシュ画面（タイトル、バージョン、作者 "Takuo Watanabe (JM1TEU) w/ Claude"） |
+| `84a87a9` | 設定画面の右上に電池残量（%）。充電中は先頭に + |
 
 CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
@@ -113,7 +116,9 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
 `441fd8e`〜`d71da03`（機能追加）は 2026-11-06 にユーザーが確認: エレキー操作、IAMBIC-A/B の違い、DIT/DAH 入れ替え、設定画面の操作、中断中に時間が止まること、再開・終了は OK。ストレートキーの追従が悪い（遅く打った後に速く打つと J が ETTT になる）との報告があり `9cdced4` で対応。
 
-`8ac555e`〜`9cdced4` は両実機に書き込み済み、実機未確認。
+`8ac555e`〜`9cdced4` は 2026-11-06 にユーザーが確認: ストレートキーの認識は「かなり満足」、WPM 表示が打つ速さで変わる、設定画面と操作の変更、音量の既定値、いずれも OK。
+
+`7e20c88`・`84a87a9` は両実機に書き込み済み、実機未確認。
 
 追従不良の調査（2026-11-06）: `DEBUG_MARKS` 版（打鍵ごとの長さ・間隔・推定値をシリアルに出す。コミットしていない）で CoreS3 のログを取った。ユーザーが速く打つと、短点は 14〜60ms と極端に短く（弾くような打ち方）、長点 210〜340ms、文字内の間隔 40〜90ms。旧方式は長点を短点の 4 倍に制限し、文字間を短点 2 個分（60〜100ms）にしていたため文字が割れていた。ログを `decoder_host` で再生すると旧方式で実機と同じ誤り（ETTT など）が再現し、新方式ではほぼすべて J になった。残る誤りは長点中の 16ms の隙間（バタつき）と、デバウンス 10ms より短いと思われる短点の欠落
 - ログからの再生: ログの gap/mark 行から押下・解放の時刻列を組み立てて `decoder_host` に流す（スクリプトは未コミット。必要なら `tools/` に入れる）
