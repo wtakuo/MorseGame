@@ -12,13 +12,15 @@ M5Stack 用のモールス打鍵練習ゲーム。画面に出る文字・単語
   - [Game.h](Game.h) / [.cpp](Game.cpp): ゲーム状態・判定・スコア・レベル。難易度で変える値は `GameRules`。画面への変更通知は `takeChanges()` のビットフラグ
   - [Words.h](Words.h) / [.cpp](Words.cpp): 出題単語、`pickChallenge(level)`
   - [Settings.h](Settings.h) / [.cpp](Settings.cpp): 設定値 `Settings`、難易度ごとの `rulesFor()`、NVS（`Preferences`、名前空間 `morsegame`）への保存とハイスコア（`Storage`）
-  - [SettingsMenu.h](SettingsMenu.h) / [.cpp](SettingsMenu.cpp): 設定画面（左=次の項目 ▼、中=前の値 ◀、右=次の値 ▶。ボタンごとにクリック音。右上に電池残量。CoreS3 では開いている間だけ `M5.setTouchButtonHeight(36)` で画面下端をボタンにする）
+  - [SettingsMenu.h](SettingsMenu.h) / [.cpp](SettingsMenu.cpp): 設定画面（左=次の項目 ▼、中=前の値 ◀、右=次の値 ▶。ボタンごとにクリック音。右上に電池残量）
+  - [ButtonBar.h](ButtonBar.h) / [.cpp](ButtonBar.cpp): 最下行（高さ 36px）の 3 ボタンのラベル。CoreS3 では `begin()` で `M5.setTouchButtonHeight(36)` にし、ラベルそのものがタッチボタンになる
   - [Screen.h](Screen.h) / [.cpp](Screen.cpp): ゲーム画面のレイアウトと描画。M5GFX は文字サイズがフォント切り替え後も残るので、描画ごとに `setTextSize` を明示する
   - [Sound.h](Sound.h) / [.cpp](Sound.cpp): 側音と効果音
   - MorseCode と MorseDecoder は Arduino 非依存（時刻は引数で渡す）。PC でもビルドでき、`tools/decoder_host.cpp` からシミュレータで検証する。ここに Arduino 依存を持ち込まない
 - arduino-cli + Arduino (esp32:esp32 2.0.17) + M5Unified。2026-11-04 に PlatformIO から移行（`platformio.ini` / `include` / `lib` / `test` は削除）
 - 対象機種: プロファイル `cores3`（M5Stack CoreS3、既定、キーは Grove Port B の GPIO 8、DAH パドルは GPIO 9）、`core2`（Core2、Grove Port A の GPIO 33、DAH は GPIO 32）。キーピン `KEY_PIN` / `KEY_PIN2` はボードマクロ（`ARDUINO_M5STACK_Core2` など）で自動選択。ストレートキーと DIT パドルは `KEY_PIN`
-- ボタン: 待機画面で左=設定、中=開始。プレイ中は中=中断、中断中は中=再開、左=終了。CoreS3 は M5Unified が画面下端のタッチを BtnA/B/C にしている
+- ボタン: 待機画面で左=設定、中=開始。プレイ中は中=中断、中断中は中=再開、左=終了。役割は最下行にラベル表示
+- CoreS3 のタッチボタン: M5Unified はタッチの y が「240 − タッチボタン高さ」以上なら BtnA/B/C にする。高さ 0（既定）だと y ≥ 240 のタッチだけが対象で、CoreS3 SE は下端でその値を返すが、SE なしの CoreS3 は中央付近でほとんど返さず START が効かなかった（2026-11-06）。そのため常に高さ 36 にしている。CoreS3 と CoreS3 SE は同じファームウェア（プロファイル `cores3`）でよい
 - ユーザーとの会話は日本語、コード中のコメントとコミットメッセージは英語
 
 ## ビルド・書き込み
@@ -98,6 +100,8 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 | `84a87a9` | 設定画面の右上に電池残量（%）。充電中は先頭に + |
 | `05b6d80` | 設定画面の「次の項目」ボタンを ▼ に。設定画面のボタン操作ごとにクリック音（設定中の音量。VOLUME 変更時の確認音を置き換え） |
 | `a47874f` | 日本語版 README.ja.md を追加し、README.md を現状に合わせて更新 |
+| `4ef0bbb` | ゲーム画面の最下行にボタンラベル（`ButtonBar`）。CoreS3 は起動時から `M5.setTouchButtonHeight(36)`。入力行とキーランプはラベルの上へ |
+| `c64b35e` | 入力行（解読した文字）を明るい青 `color565(100, 180, 255)` で表示 |
 
 CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
@@ -123,7 +127,7 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
 `7e20c88`・`84a87a9` も 2026-11-06 にユーザーが確認済み（スプラッシュ画面、電池表示）。
 
-`05b6d80` も 2026-11-06 にユーザーが確認済み（▼ ボタン、クリック音）。
+`05b6d80` も 2026-11-06 にユーザーが確認済み（▼ ボタン、クリック音）。`4ef0bbb` のボタン（SETTINGS, START, PAUSE, RESUME, QUIT）もユーザーが確認済み。`c64b35e` は CoreS3 に書き込み済み、実機未確認。Core2 には `4ef0bbb` 以降を書き込めていない（いつもの `<port>` がなく、`<port>` が見えていた。何の機器かユーザーに確認中）。
 
 追従不良の調査（2026-11-06）: `DEBUG_MARKS` 版（打鍵ごとの長さ・間隔・推定値をシリアルに出す。コミットしていない）で CoreS3 のログを取った。ユーザーが速く打つと、短点は 14〜60ms と極端に短く（弾くような打ち方）、長点 210〜340ms、文字内の間隔 40〜90ms。旧方式は長点を短点の 4 倍に制限し、文字間を短点 2 個分（60〜100ms）にしていたため文字が割れていた。ログを `decoder_host` で再生すると旧方式で実機と同じ誤り（ETTT など）が再現し、新方式ではほぼすべて J になった。残る誤りは長点中の 16ms の隙間（バタつき）と、デバウンス 10ms より短いと思われる短点の欠落
 - ログからの再生: ログの gap/mark 行から押下・解放の時刻列を組み立てて `decoder_host` に流す（スクリプトは未コミット。必要なら `tools/` に入れる）
