@@ -2,7 +2,16 @@
 
 M5Stack 用のモールス打鍵練習ゲーム。画面に出る文字・単語を GPIO に接続したモールスキーで打鍵する。制限時間内に正しく打てないとペナルティ 1（コード上は `lives--`）、5 回でゲームオーバー。2025-11-15 の横浜緑ヶ丘高校ホームカミングデー展示用に作成。
 
-- コードは [MorseGame.ino](MorseGame.ino) 1 ファイル（グローバル変数ベース）
+- コードはスケッチ直下のモジュールに分割（2026-11-06、`d34ef7e`）
+  - [MorseGame.ino](MorseGame.ino): 各部品をつなぐだけ（`iter()` で 4ms ごとにキーを読み、解読してゲームを進める）
+  - [Config.h](Config.h): キーピン、ループ周期
+  - [MorseCode.h](MorseCode.h) / [.cpp](MorseCode.cpp): 符号表 `morseTable[]`（先頭 26 個が A-Z、続く 10 個が 0-9）と `morseLookup()`
+  - [MorseDecoder.h](MorseDecoder.h) / [.cpp](MorseDecoder.cpp): `StraightKey`（デバウンス）、`SpeedTracker`（速度追従・短点/長点判定）、`CharacterDecoder`（文字・語の組み立て）
+  - [Game.h](Game.h) / [.cpp](Game.cpp): ゲーム状態・判定・スコア・レベル。難易度で変える値は `GameRules`。画面への変更通知は `takeChanges()` のビットフラグ
+  - [Words.h](Words.h) / [.cpp](Words.cpp): 出題単語、`pickChallenge(level)`
+  - [Screen.h](Screen.h) / [.cpp](Screen.cpp): レイアウトと描画
+  - [Sound.h](Sound.h) / [.cpp](Sound.cpp): 側音と効果音
+  - MorseCode と MorseDecoder は Arduino 非依存（時刻は引数で渡す）。PC でもビルドでき、`tools/decoder_host.cpp` からシミュレータで検証する。ここに Arduino 依存を持ち込まない
 - arduino-cli + Arduino (esp32:esp32 2.0.17) + M5Unified。2026-11-04 に PlatformIO から移行（`platformio.ini` / `include` / `lib` / `test` は削除）
 - 対象機種: プロファイル `cores3`（M5Stack CoreS3、既定、キーは GPIO 8 = Grove Port B）、`core2`（Core2、GPIO 33 = Grove Port A）。キーピンはボードマクロ（`ARDUINO_M5STACK_Core2` など）で自動選択
 - ユーザーとの会話は日本語、コード中のコメントとコミットメッセージは英語
@@ -37,8 +46,9 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 
 - 修正は 1 件ずつ小さくコミットする（末尾に `Co-Authored-By` 行）
 - 打鍵タイミングに関わる変更は、実機を触る前に [tools/morse_sim.py](tools/morse_sim.py)（`python3 tools/morse_sim.py`）で比較してから入れる。過去にデバウンス修正で認識率を大きく落としたことがある
-  - 人の打鍵（速度、長点/短点比、ばらつき、文字の最後の符号を長めに押す癖、チャタリング）を生成し、4ms 周期・10ms デバウンスで `iter()` と同じように解読する。解読方式はクラス（`Current` = `aaf1e06` より前の方式、`WindowMeans` = 現在の `classifyMark()`）で差し替える
-  - ファームウェアの定数を変えたらシミュレータ側も合わせる
+  - 人の打鍵（速度、長点/短点比、ばらつき、文字の最後の符号を長めに押す癖、チャタリング）を生成し、4ms 周期・10ms デバウンスで `iter()` と同じように解読する。解読方式はクラス（`Current` = `aaf1e06` より前の方式、`WindowMeans` = 現在の `SpeedTracker`）で差し替える
+  - ファームウェアの定数を変えたらシミュレータ側も合わせる。`python3 tools/morse_sim.py --check-host` で、ファームウェアの `MorseDecoder.cpp` を PC でビルドし、`WindowMeans` と同じ解読結果になるか確認できる（800 例中 799 例一致。残る 1 例は float/double の丸め差）
+  - 符号表はシミュレータも `MorseCode.cpp` から読み込む
   - 単語はお題ごとに「語間＋1.5 秒」空けて打つ想定。採点は単語列を対応付けて行う（位置で比べると分割・結合で以降がすべてずれる）
 
 ## 現在の状況（2026-11-06 時点）
@@ -67,6 +77,8 @@ arduino-cli upload --profile cores3 --build-path build/cores3 -p <port>        #
 | `6bf6299` | 未使用の `DRAW_INTERVAL_MS` / `MAXINPUTTEXT` / `lastDrawTime` を削除 |
 | `fded2f3` | `morsePlain` / `morseCode` の並行配列とマジックナンバー `45` をやめ、`morseTable[]`（`{text, code}`、code は `.`/`-` の文字列）に統合。打鍵中の符号も文字列で保持し `strcmp` で照合。レベル 1 は先頭 `NUM_LETTERS`(26) 個から出題 |
 | `22876c7` | 画面の座標を `setDrawPosition()` に集約（フォントが固定サイズなので画面の端・中心基準）。時間バーをお題領域（y=70〜165）の外、y=168 に移し、プレイ中以外は消す。入力行の文字数もフォント幅から計算（320px で従来どおり 19） |
+| `d34ef7e` | リファクタリング: モジュールに分割（動作は変えない） |
+| `15267b7` | `tools/decoder_host.cpp` と `morse_sim.py --check-host` を追加 |
 
 CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
@@ -84,6 +96,8 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
 
 `d8b9c11`〜`22876c7`（細かい点の修正）も 2026-11-06 にユーザーが実機で確認済み（画面の見た目、文字認識、ゲームオーバー・待機画面で時間バーが消えること）。
 
+`d34ef7e`（モジュール分割）は両実機に書き込み済みだが、動作は未確認。
+
 `aaf1e06` は 2026-11-06 にユーザーが実機で試した。打ち始めは誤認識があったが比較的早く追随し、追随後は S/U などの誤認識が減った印象とのこと。もともとユーザーの打鍵で S が U、I が A と認識されることがあった問題への対応。シミュレーションの要点（単語正解率、打ち始め 2 単語 / その後）:
 - S・I の誤読（5 単語後）: 長点が短め（比 2.3）の人で 78〜87% → 0〜2%、最後の短点を長く押す人で最大 17% → 2〜5%
 - 遅い人（6〜10WPM）の打ち始め: 0〜10% → 40〜98%
@@ -100,5 +114,12 @@ CLAUDE.md もリポジトリで管理している（2026-11-05 に追加）。
    - ~~打鍵のたびにスコア欄を再描画している~~（`e73fe5b`）
    - ~~残り時間バーの更新を `millis()` で行う~~（`cd17538`）
 4. ~~細かい点~~（`d8b9c11`〜`22876c7`、実機確認済み）
-5. リファクタリング: モールス解読 / ゲーム状態遷移 / 表示・音 に分割、効果音の非同期シーケンサ
-6. 機能追加候補: WPM 選択、レベル表示、ハイスコア保存（NVS）、プレイ中の中断、レベル 1 に数字を出題
+5. ~~リファクタリング~~（`d34ef7e`、実機確認待ち）。効果音の非同期シーケンサは不要と判断（M5Unified が同じチャンネルの 2 音目をキューするので `twoNotes()` で足りる）
+6. 機能追加（2026-11-06 にユーザーが依頼。リファクタリングの後に 1 機能ずつ実装して実機確認する）
+   - エレキーパドル対応（ストレートキーと切り替え）
+   - 設定画面: キー種別（ストレート/エレキー）、WPM、エレキー時の DIT/DAH 入れ替え、難易度（初心者/中級者/上級者）、音量、リセット（デフォルトに戻す）
+   - 難易度ごとに最初の認識スピード、制限時間などを変える。項目と値はこちらが候補を出し、ユーザーが実機で調整する
+   - ハイスコアを難易度別に保存。設定とハイスコアは NVS に保存
+   - プレイ中の中断
+   - レベル 1 で数字も出題
+   - 未決: パドルの 2 本目のピン（Core2 は GPIO 32、CoreS3 は GPIO 9 の予定）、Iambic A/B、設定画面の操作方法（タッチボタン / パドル）、ストレートキーでの WPM の扱い（追従の初期値か固定か）と難易度の「最初の認識スピード」との関係
